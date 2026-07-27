@@ -80,6 +80,12 @@ test("includes the emotion model, shame support, and every DBT world", async () 
   assert.match(page, /nctsn\.org\/interventions\/parent-child-care/);
   assert.match(page, /pubmed\.ncbi\.nlm\.nih\.gov\/28942805/);
   assert.match(page, /localStorage/);
+  assert.match(page, /data-voice-mode="custom-ready"/);
+  assert.match(page, /TAP TO HEAR/);
+  assert.match(page, /power-up-pals-little-reader/);
+  assert.match(page, /DEVICE VOICE: ON/);
+  assert.match(page, /CUSTOM_VOICE_CLIPS/);
+  assert.match(page, /Big pictures\. Short words\. Spoken help\./);
   assert.match(page, /speechSynthesis/);
   assert.match(layout, /Power-Up Pals/);
   assert.match(layout, /og-vibe-arcade\.png/);

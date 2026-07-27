@@ -541,6 +541,21 @@ const CORE_DIRECTIONS: Record<CoreQuestId, string> = {
     "Respawn and repair. Calm your body. Check for hurt. Tell the truth. Help fix it. Then reconnect.",
 };
 
+const PAGE_DIRECTIONS: Record<Tab, string> = {
+  home:
+    "Power-Up Pals. Big feelings. Mega skills. Pick a feeling, play a shared quest, or build your Safe Base.",
+  machine:
+    "Emotion Machine. Pick a feeling. Notice what happened, the brain story, body clues, and the urge. Then pick a safe power-up.",
+  glossary:
+    "Feeling book. Tap a feeling face. Then tap the speaker to hear what the feeling may say and what might help.",
+  worlds:
+    "My Safe Base. Practice a quest to unlock cozy things. Tap an unlocked thing to put it in your world.",
+  arcade:
+    "Vibe Arcade. Pick one of the five big picture quests. Tap Hear if you want the directions again.",
+  grownup:
+    "Grown-up co-op. Connect first. Help the body feel safe. Practice the skill later, when the child is ready.",
+};
+
 const SAFE_BASE_REWARDS: {
   id: RewardId;
   emoji: string;
@@ -786,13 +801,33 @@ const NAV: { id: Tab; label: string; emoji: string }[] = [
   { id: "grownup", label: "Grown-up Co-op", emoji: "🤝" },
 ];
 
-function speak(text: string) {
+const CUSTOM_VOICE_CLIPS: Partial<Record<string, string>> = {
+  // Authorized custom-voice clips can be mapped here by cue name.
+  // Example: pageHome: "/audio/custom/page-home.mp3"
+};
+
+let activeVoiceAudio: HTMLAudioElement | null = null;
+
+function speakWithDeviceVoice(text: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 0.88;
-  utterance.pitch = 1.08;
+  utterance.rate = 0.82;
+  utterance.pitch = 1.05;
   window.speechSynthesis.speak(utterance);
+}
+
+function speak(text: string, cue?: string) {
+  if (typeof window === "undefined") return;
+  const customClip = cue ? CUSTOM_VOICE_CLIPS[cue] : undefined;
+  if (!customClip) {
+    speakWithDeviceVoice(text);
+    return;
+  }
+
+  activeVoiceAudio?.pause();
+  activeVoiceAudio = new Audio(customClip);
+  activeVoiceAudio.play().catch(() => speakWithDeviceVoice(text));
 }
 
 function SixSevenReset({ onComplete }: { onComplete?: () => void }) {
@@ -929,6 +964,7 @@ function SlimeBreathing({ onComplete }: { onComplete?: () => void }) {
         🔊 Hear the directions
       </button>
       <button
+        aria-label={running ? "Restart Slime Goes Slow" : "Start three slow breaths"}
         className="primary-button"
         onClick={() => {
           setElapsed(0);
@@ -939,7 +975,7 @@ function SlimeBreathing({ onComplete }: { onComplete?: () => void }) {
         }}
         type="button"
       >
-        {running ? "Restart slime" : "Start 3 slow breaths"}
+        {running ? "↻ RESTART" : "▶ START"}
       </button>
     </div>
   );
@@ -1006,7 +1042,7 @@ function FeelingsCheckIn({
         }}
         type="button"
       >
-        🔊 This is my feeling
+        🔊 I FEEL THIS
       </button>
     </div>
   );
@@ -1066,7 +1102,7 @@ function SigmaStopChallenge({ onComplete }: { onComplete: () => void }) {
         </button>
       </div>
       <button className="primary-button" onClick={advance} type="button">
-        {step === 3 ? "Choose the safe move" : "Next move"}
+        {step === 3 ? "SAFE MOVE" : "NEXT"}
       </button>
     </div>
   );
@@ -1299,7 +1335,7 @@ function RepairQuest({ onComplete }: { onComplete: () => void }) {
         onClick={onComplete}
         type="button"
       >
-        Big W repair complete
+        ✓ DONE! FIXED IT
       </button>
     </div>
   );
@@ -1444,7 +1480,10 @@ function SafeBaseBuilder({
             <button
               aria-pressed={safeAdults.includes(adult)}
               key={adult}
-              onClick={() => onToggleAdult(adult)}
+              onClick={() => {
+                onToggleAdult(adult);
+                speak(`${adult}. Safe team.`, `safe-adult-${adult}`);
+              }}
               type="button"
             >
               {safeAdults.includes(adult) ? "🛡️" : "＋"} {adult}
@@ -1471,7 +1510,13 @@ function SafeBaseBuilder({
                   aria-label={`Remove ${reward.name} from my Safe Base`}
                   className={`placed-item placed-${index + 1}`}
                   key={reward.id}
-                  onClick={() => onToggleReward(reward.id)}
+                  onClick={() => {
+                    onToggleReward(reward.id);
+                    speak(
+                      `${reward.name}. Out of your Safe Base.`,
+                      `reward-${reward.id}-out`,
+                    );
+                  }}
                   type="button"
                 >
                   <span aria-hidden="true">{reward.emoji}</span>
@@ -1510,7 +1555,13 @@ function SafeBaseBuilder({
               aria-pressed={isPlaced}
               disabled={!isUnlocked}
               key={reward.id}
-              onClick={() => onToggleReward(reward.id)}
+              onClick={() => {
+                onToggleReward(reward.id);
+                speak(
+                  `${reward.name}. ${reward.detail}`,
+                  `reward-${reward.id}`,
+                );
+              }}
               type="button"
             >
               <span aria-hidden="true">{isUnlocked ? reward.emoji : "🔒"}</span>
@@ -1549,6 +1600,7 @@ function App() {
   const [placedRewards, setPlacedRewards] = useState<RewardId[]>([]);
   const [safeAdults, setSafeAdults] = useState<string[]>(["My grown-up"]);
   const [grownupPowerOpen, setGrownupPowerOpen] = useState(false);
+  const [littleReader, setLittleReader] = useState(true);
 
   const emotion =
     EMOTIONS.find((item) => item.id === emotionId) ?? EMOTIONS[0];
@@ -1573,6 +1625,10 @@ function App() {
     if (saved === "genAlpha" || saved === "creature" || saved === "straightUp") {
       setVibePack(saved);
     }
+    const savedReaderMode = window.localStorage.getItem(
+      "power-up-pals-little-reader",
+    );
+    if (savedReaderMode === "false") setLittleReader(false);
     try {
       const unlocked = JSON.parse(
         window.localStorage.getItem("power-up-pals-unlocked-rewards") ?? "[]",
@@ -1661,6 +1717,31 @@ function App() {
     speak(
       "Grown-up power-up. Connect first. Your body is having a huge alarm. I am here with you. We will solve it when your body is ready.",
     );
+  };
+
+  const toggleReaderMode = () => {
+    setLittleReader((current) => {
+      const next = !current;
+      window.localStorage.setItem(
+        "power-up-pals-little-reader",
+        String(next),
+      );
+      speak(
+        next
+          ? "Little Reader mode. Big pictures. Short words. Tap Hear for help."
+          : "More Words mode. Extra grown-up details are showing.",
+        next ? "littleReaderOn" : "littleReaderOff",
+      );
+      return next;
+    });
+  };
+
+  const hearCurrentPage = () => {
+    const text =
+      activeTab === "arcade"
+        ? `${PAGE_DIRECTIONS.arcade} ${CORE_DIRECTIONS[coreQuest.id]}`
+        : PAGE_DIRECTIONS[activeTab];
+    speak(text, `page-${activeTab}`);
   };
 
   const chooseVibePack = (id: VibePackId) => {
@@ -1756,7 +1837,10 @@ function App() {
   ];
 
   return (
-    <div className="app-shell">
+    <div
+      className={littleReader ? "app-shell little-reader" : "app-shell"}
+      data-voice-mode="custom-ready"
+    >
       <header className="topbar">
         <button className="brand" onClick={() => go("home")} type="button">
           <span className="brand-mark" aria-hidden="true">
@@ -1780,21 +1864,56 @@ function App() {
             </button>
           ))}
         </nav>
-        <div
-          className={auraRestored ? "aura-chip restored" : "aura-chip"}
-          aria-label={
-            auraRestored
-              ? "Aura restored after practicing a skill"
-              : "Aura ready to recharge"
-          }
-        >
-          <span aria-hidden="true">✨</span>
-          <span>
-            <strong>{auraRestored ? "RESTORED" : "READY"}</strong>
-            <small>Aura status</small>
-          </span>
+        <div className="topbar-tools">
+          <button
+            aria-label="Hear this page"
+            className="hear-page-button"
+            onClick={hearCurrentPage}
+            type="button"
+          >
+            <span aria-hidden="true">🔊</span>
+            <strong>HEAR</strong>
+          </button>
+          <button
+            aria-label={
+              littleReader
+                ? "Little Reader mode is on. Show more words."
+                : "More Words mode is on. Switch to Little Reader."
+            }
+            aria-pressed={littleReader}
+            className="reader-mode-button"
+            onClick={toggleReaderMode}
+            type="button"
+          >
+            <span aria-hidden="true">{littleReader ? "👀" : "📝"}</span>
+            <strong>{littleReader ? "BIG PICS" : "MORE"}</strong>
+          </button>
+          <div
+            className={auraRestored ? "aura-chip restored" : "aura-chip"}
+            aria-label={
+              auraRestored
+                ? "Aura restored after practicing a skill"
+                : "Aura ready to recharge"
+            }
+          >
+            <span aria-hidden="true">✨</span>
+            <span>
+              <strong>{auraRestored ? "RESTORED" : "READY"}</strong>
+              <small>Aura status</small>
+            </span>
+          </div>
         </div>
       </header>
+
+      <button
+        className="listen-first-banner"
+        onClick={hearCurrentPage}
+        type="button"
+      >
+        <span aria-hidden="true">🔊</span>
+        <strong>TAP TO HEAR</strong>
+        <small>You do not have to read.</small>
+      </button>
 
       <main>
         {activeTab === "home" && (
@@ -2525,7 +2644,7 @@ function App() {
               <div className="core-quest-heading">
                 <div>
                   <span className="kicker">THE POLISHED CORE FIVE</span>
-                  <h2 id="core-quest-title">Pick a shared quest</h2>
+                  <h2 id="core-quest-title">Pick one</h2>
                   <p>
                     Built for a child and caregiver to tap, hear, move, and
                     practice together on a tablet or phone.
@@ -2533,10 +2652,15 @@ function App() {
                 </div>
                 <button
                   className="listen-button"
-                  onClick={() => speak(CORE_DIRECTIONS[coreQuest.id])}
+                  onClick={() =>
+                    speak(
+                      CORE_DIRECTIONS[coreQuest.id],
+                      `quest-directions-${coreQuest.id}`,
+                    )
+                  }
                   type="button"
                 >
-                  🔊 Hear this quest
+                  🔊 HEAR
                 </button>
               </div>
 
@@ -2546,7 +2670,13 @@ function App() {
                     aria-selected={coreQuest.id === quest.id}
                     className={coreQuest.id === quest.id ? "selected" : ""}
                     key={quest.id}
-                    onClick={() => setCoreQuestId(quest.id)}
+                    onClick={() => {
+                      setCoreQuestId(quest.id);
+                      speak(
+                        `${quest.title}. ${quest.stable}.`,
+                        `quest-${quest.id}`,
+                      );
+                    }}
                     role="tab"
                     type="button"
                   >
@@ -2825,6 +2955,27 @@ function App() {
               >
                 🤝 Get My Grown-Up Power-Up
               </button>
+            </section>
+
+            <section className="voice-ready-card">
+              <span aria-hidden="true">🎙️</span>
+              <div>
+                <span className="kicker">LISTEN-FIRST MODE</span>
+                <h2>Big pictures. Short words. Spoken help.</h2>
+                <p>
+                  Every core quest has a large Hear button, and tapping key
+                  pictures says their name. The built-in device narrator is
+                  active now. An authorized custom narrator can replace it when
+                  approved audio is added.
+                </p>
+              </div>
+              <div className="voice-status">
+                <strong>🔊 DEVICE VOICE: ON</strong>
+                <small>
+                  Custom voices must be your own, licensed, or used with the
+                  speaker’s permission.
+                </small>
+              </div>
             </section>
 
             <section className="dbt-skin-map" aria-labelledby="dbt-map-title">

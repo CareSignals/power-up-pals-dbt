@@ -166,6 +166,48 @@ button:disabled {
   color: white;
 }
 
+.topbar-tools {
+  align-items: center;
+  display: flex;
+  gap: 7px;
+}
+
+.hear-page-button,
+.reader-mode-button {
+  align-items: center;
+  background: white;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  display: flex;
+  gap: 5px;
+  min-height: 42px;
+  padding: 7px 10px;
+}
+
+.hear-page-button {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: white;
+}
+
+.reader-mode-button[aria-pressed="true"] {
+  background: #e9ffbd;
+  border-color: #a8d24e;
+}
+
+.hear-page-button span,
+.reader-mode-button span {
+  font-size: 17px;
+}
+
+.hear-page-button strong,
+.reader-mode-button strong {
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: 0.05em;
+}
+
 .aura-chip {
   align-items: center;
   background: #fff8d4;
@@ -203,6 +245,66 @@ button:disabled {
   margin: 0 auto;
   max-width: 1460px;
   padding: 38px 5vw 82px;
+}
+
+.listen-first-banner {
+  display: none;
+}
+
+.little-reader .listen-first-banner {
+  align-items: center;
+  background: #e8ffba;
+  border: 0;
+  border-bottom: 2px solid #add351;
+  color: #31420f;
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  min-height: 48px;
+  padding: 8px 18px;
+  width: 100%;
+}
+
+.listen-first-banner span {
+  font-size: 23px;
+}
+
+.listen-first-banner strong {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.listen-first-banner small {
+  color: #596c31;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.little-reader .arcade-page .vibe-pack-lab,
+.little-reader .arcade-page .arcade-shell,
+.little-reader .arcade-page .slang-safety,
+.little-reader .worlds-page .world-map,
+.little-reader .worlds-page .silly-surprise-rules,
+.little-reader .home-page .feature-strip,
+.little-reader .home-page .grownup-banner {
+  display: none;
+}
+
+.little-reader .arcade-intro p,
+.little-reader .core-quest-heading p,
+.little-reader .safe-base-copy > p,
+.little-reader .safe-base-teaser p,
+.little-reader .pal-roster .inline-heading > p,
+.little-reader .reward-shelf small,
+.little-reader .pal-cards small {
+  display: none;
+}
+
+.little-reader .primary-button,
+.little-reader .secondary-button,
+.little-reader .listen-button {
+  min-height: 54px;
 }
 
 .primary-button,
@@ -3345,6 +3447,68 @@ button:disabled {
   max-width: 740px;
 }
 
+.voice-ready-card {
+  align-items: center;
+  background: #eafcff;
+  border: 2px solid #9bdbdf;
+  border-radius: 23px;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: auto 1fr minmax(220px, 0.55fr);
+  margin-top: 24px;
+  padding: 22px 25px;
+}
+
+.voice-ready-card > span {
+  align-items: center;
+  background: var(--aqua);
+  border: 3px solid var(--ink);
+  border-radius: 17px;
+  display: flex;
+  font-size: 31px;
+  height: 66px;
+  justify-content: center;
+  width: 66px;
+}
+
+.voice-ready-card h2 {
+  font-size: 24px;
+  letter-spacing: -0.035em;
+  margin: 3px 0 5px;
+}
+
+.voice-ready-card p {
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.voice-status {
+  background: white;
+  border: 2px solid #a8dde0;
+  border-radius: 15px;
+  padding: 13px;
+}
+
+.voice-status strong,
+.voice-status small {
+  display: block;
+}
+
+.voice-status strong {
+  color: #246c70;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.voice-status small {
+  color: var(--ink-soft);
+  font-size: 9px;
+  line-height: 1.4;
+  margin-top: 6px;
+}
+
 .dbt-skin-map {
   background: white;
   border: 1px solid var(--line);
@@ -3974,6 +4138,14 @@ button:disabled {
     grid-column: 1 / -1;
   }
 
+  .voice-ready-card {
+    grid-template-columns: auto 1fr;
+  }
+
+  .voice-status {
+    grid-column: 1 / -1;
+  }
+
   .arcade-skill-menu {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -4034,14 +4206,27 @@ button:disabled {
   }
 
   .aura-chip {
-    padding: 6px 9px;
+    display: none;
   }
 
-  .aura-chip > span:first-child {
-    font-size: 17px;
+  .topbar-tools {
+    gap: 4px;
   }
 
-  .aura-chip small {
+  .hear-page-button,
+  .reader-mode-button {
+    height: 42px;
+    justify-content: center;
+    padding: 0;
+    width: 42px;
+  }
+
+  .hear-page-button strong,
+  .reader-mode-button strong {
+    display: none;
+  }
+
+  .listen-first-banner small {
     display: none;
   }
 
@@ -4216,13 +4401,18 @@ button:disabled {
   }
 
   .silly-surprise-rules,
-  .development-rule {
+  .development-rule,
+  .voice-ready-card {
     grid-template-columns: 1fr;
     padding: 20px;
   }
 
   .silly-surprise-rules > div:first-child,
   .development-rule .primary-button {
+    grid-column: auto;
+  }
+
+  .voice-status {
     grid-column: auto;
   }
 
