@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Tab =
   | "home"
@@ -12,6 +12,7 @@ type Tab =
 type VibePackId = "genAlpha" | "creature" | "straightUp";
 type CoreQuestId = "checkIn" | "slime" | "freeze" | "both" | "repair";
 type RewardId = "slime" | "blocks" | "pet" | "music" | "costume" | "portal";
+type FeelingGroupId = "all" | "hotFast" | "alarm" | "lowHeavy" | "connection";
 type ArcadeSkillId =
   | "sixSeven"
   | "sigmaStop"
@@ -541,6 +542,50 @@ const CORE_DIRECTIONS: Record<CoreQuestId, string> = {
     "Respawn and repair. Calm your body. Check for hurt. Tell the truth. Help fix it. Then reconnect.",
 };
 
+const FEELING_GROUPS: {
+  id: FeelingGroupId;
+  emoji: string;
+  label: string;
+  spoken: string;
+  emotions: string[];
+}[] = [
+  {
+    id: "all",
+    emoji: "🌈",
+    label: "All feelings",
+    spoken: "All feelings.",
+    emotions: EMOTIONS.map((emotion) => emotion.id),
+  },
+  {
+    id: "hotFast",
+    emoji: "🔥",
+    label: "Hot or fast",
+    spoken: "Hot or fast feelings.",
+    emotions: ["angry", "frustrated", "excited", "jealous", "embarrassed"],
+  },
+  {
+    id: "alarm",
+    emoji: "🚨",
+    label: "Alarm feelings",
+    spoken: "Scared, worried, or unsure feelings.",
+    emotions: ["scared", "worried", "confused"],
+  },
+  {
+    id: "lowHeavy",
+    emoji: "🌧️",
+    label: "Low or heavy",
+    spoken: "Low or heavy feelings.",
+    emotions: ["sad", "guilty", "shame", "lonely"],
+  },
+  {
+    id: "connection",
+    emoji: "🤝",
+    label: "Need connection",
+    spoken: "Feelings that may need connection.",
+    emotions: ["hurt", "lonely", "jealous", "shame", "calm", "proud"],
+  },
+];
+
 const PAGE_DIRECTIONS: Record<Tab, string> = {
   home:
     "Power-Up Pals. Big feelings. Mega skills. Pick a feeling, play a shared quest, or build your Safe Base.",
@@ -808,9 +853,16 @@ const CUSTOM_VOICE_CLIPS: Partial<Record<string, string>> = {
 
 let activeVoiceAudio: HTMLAudioElement | null = null;
 
+function stopVoice() {
+  if (typeof window === "undefined") return;
+  activeVoiceAudio?.pause();
+  if (activeVoiceAudio) activeVoiceAudio.currentTime = 0;
+  activeVoiceAudio = null;
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+}
+
 function speakWithDeviceVoice(text: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.rate = 0.82;
   utterance.pitch = 1.05;
@@ -819,13 +871,13 @@ function speakWithDeviceVoice(text: string) {
 
 function speak(text: string, cue?: string) {
   if (typeof window === "undefined") return;
+  stopVoice();
   const customClip = cue ? CUSTOM_VOICE_CLIPS[cue] : undefined;
   if (!customClip) {
     speakWithDeviceVoice(text);
     return;
   }
 
-  activeVoiceAudio?.pause();
   activeVoiceAudio = new Audio(customClip);
   activeVoiceAudio.play().catch(() => speakWithDeviceVoice(text));
 }
@@ -922,22 +974,32 @@ function SixSevenReset({ onComplete }: { onComplete?: () => void }) {
 function SlimeBreathing({ onComplete }: { onComplete?: () => void }) {
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const cycle = Math.min(3, Math.floor(elapsed / 10) + 1);
 
   useEffect(() => {
     if (!running) return;
-    if (elapsed >= 30) {
-      setRunning(false);
-      onComplete?.();
-      return;
-    }
-    const timer = window.setTimeout(() => setElapsed(elapsed + 1), 1000);
+    const timer = window.setTimeout(() => {
+      const next = elapsed + 1;
+      setElapsed(next);
+      if (next === 4 || next === 14 || next === 24) {
+        speak("Breathe out sloooow. Let the slime stretch.");
+      } else if (next === 10) {
+        speak("Breath two of three. Easy breath in.");
+      } else if (next === 20) {
+        speak("Breath three of three. Easy breath in.");
+      } else if (next >= 30) {
+        setRunning(false);
+        speak("Done. Three slime-slow breaths. What changed in your body?");
+        onComplete?.();
+      }
+    }, 1000);
     return () => window.clearTimeout(timer);
   }, [elapsed, onComplete, running]);
 
   const position = elapsed % 10;
   const phase = !running
     ? elapsed >= 30
-      ? "Complete!"
+      ? "Done!"
       : "Ready?"
     : position < 4
       ? "Breathe in"
@@ -950,6 +1012,25 @@ function SlimeBreathing({ onComplete }: { onComplete?: () => void }) {
         aria-label={phase}
       >
         <span>{phase}</span>
+      </div>
+      <div className="breath-cycles" aria-live="polite">
+        {[1, 2, 3].map((number) => (
+          <span
+            className={
+              elapsed >= number * 10
+                ? "complete"
+                : running && cycle === number
+                  ? "active"
+                  : ""
+            }
+            key={number}
+          >
+            {elapsed >= number * 10 ? "✓" : number}
+          </span>
+        ))}
+        <strong>
+          {elapsed >= 30 ? "THREE BREATHS DONE" : `BREATH ${cycle} OF 3`}
+        </strong>
       </div>
       <p>Easy breath in. Longer, slower breath out. No holding.</p>
       <button
@@ -970,7 +1051,7 @@ function SlimeBreathing({ onComplete }: { onComplete?: () => void }) {
           setElapsed(0);
           setRunning(true);
           speak(
-            "Easy breath in. Now breathe out sloooow. Let the slime stretch.",
+            "Breath one of three. Easy breath in. Now breathe out sloooow. Let the slime stretch.",
           );
         }}
         type="button"
@@ -1058,12 +1139,12 @@ function SigmaStopChallenge({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(0);
 
   const advance = () => {
-    if (step === steps.length - 1) {
-      onComplete();
-      setStep(0);
-      return;
-    }
     setStep((current) => current + 1);
+  };
+
+  const chooseMove = (move: string) => {
+    speak(`${move}. Safe and kind is the power move.`);
+    onComplete();
   };
 
   return (
@@ -1075,8 +1156,24 @@ function SigmaStopChallenge({ onComplete }: { onComplete: () => void }) {
       <h3>{steps[step][0]}</h3>
       <p>{steps[step][1]}</p>
       {step === 3 && (
-        <div className="backup-truth">
-          Real sigma gets backup. Safe and kind beats solo and dominant.
+        <div className="safe-move-wrap">
+          <div className="safe-move-grid" aria-label="Pick a safe move">
+            <button onClick={() => chooseMove("Get some space")} type="button">
+              <span aria-hidden="true">↔️</span>
+              <strong>GET SPACE</strong>
+            </button>
+            <button onClick={() => chooseMove("Use words")} type="button">
+              <span aria-hidden="true">💬</span>
+              <strong>USE WORDS</strong>
+            </button>
+            <button onClick={() => chooseMove("Get my grown-up")} type="button">
+              <span aria-hidden="true">🤝</span>
+              <strong>GET GROWN-UP</strong>
+            </button>
+          </div>
+          <div className="backup-truth">
+            Real sigma gets backup. Safe and kind beats solo and dominant.
+          </div>
         </div>
       )}
       <div className="stop-rap">
@@ -1101,9 +1198,11 @@ function SigmaStopChallenge({ onComplete }: { onComplete: () => void }) {
           🔊
         </button>
       </div>
-      <button className="primary-button" onClick={advance} type="button">
-        {step === 3 ? "SAFE MOVE" : "NEXT"}
-      </button>
+      {step < 3 && (
+        <button className="primary-button" onClick={advance} type="button">
+          NEXT
+        </button>
+      )}
     </div>
   );
 }
@@ -1289,8 +1388,9 @@ function AuraRecharge({ onComplete }: { onComplete: () => void }) {
 
 function RepairQuest({ onComplete }: { onComplete: () => void }) {
   const steps = [
-    ["Tell the truth", "Say what happened with short, honest words."],
+    ["Calm body", "Pause with a grown-up until bodies are safe enough."],
     ["Check for hurt", "Ask, “Is anyone or anything hurt?”"],
+    ["Tell the truth", "Say what happened with short, honest words."],
     ["Help fix it", "Clean, replace, try again, or get grown-up help."],
     ["Reconnect", "When everyone is ready, return to safe ordinary play."],
   ];
@@ -1422,34 +1522,190 @@ function ChaosChillChallenge({ onComplete }: { onComplete: () => void }) {
 }
 
 function SigmaBothChallenge({ onComplete }: { onComplete: () => void }) {
+  const feelings = [
+    ["🌋", "mad"],
+    ["🚨", "scared"],
+    ["🌧️", "sad"],
+    ["💔", "left out"],
+  ];
+  const moves = [
+    ["👐", "use safe hands"],
+    ["💬", "use words"],
+    ["🤝", "get my grown-up"],
+  ];
+  const [feeling, setFeeling] = useState("mad");
+  const [move, setMove] = useState("use safe hands");
+
   return (
     <div className="sigma-both">
-      <div>
-        <span>TRUTH 1</span>
-        <strong>I’m super mad.</strong>
+      <div className="both-choice-panel">
+        <span>TRUTH 1 • MY FEELING</span>
+        <div className="both-picture-choices">
+          {feelings.map(([emoji, label]) => (
+            <button
+              aria-pressed={feeling === label}
+              key={label}
+              onClick={() => {
+                setFeeling(label);
+                speak(`I feel ${label}.`);
+              }}
+              type="button"
+            >
+              <span aria-hidden="true">{emoji}</span>
+              <strong>{label}</strong>
+            </button>
+          ))}
+        </div>
       </div>
       <span className="both-plus">AND</span>
-      <div>
-        <span>TRUTH 2</span>
-        <strong>I can use safe hands.</strong>
+      <div className="both-choice-panel">
+        <span>TRUTH 2 • MY SAFE MOVE</span>
+        <div className="both-picture-choices safe-actions">
+          {moves.map(([emoji, label]) => (
+            <button
+              aria-pressed={move === label}
+              key={label}
+              onClick={() => {
+                setMove(label);
+                speak(`I can ${label}.`);
+              }}
+              type="button"
+            >
+              <span aria-hidden="true">{emoji}</span>
+              <strong>{label}</strong>
+            </button>
+          ))}
+        </div>
       </div>
-      <p>Big feelings are allowed. Unsafe actions still need a limit.</p>
+      <p className="both-sentence">
+        I feel <strong>{feeling}</strong> AND I can <strong>{move}</strong>.
+      </p>
+      <small>Big feelings are allowed. Safe limits still matter.</small>
       <button
         className="primary-button"
         onClick={() => {
-          speak("I am super mad, and I can use safe hands.");
+          speak(`I feel ${feeling}, and I can ${move}.`);
           onComplete();
         }}
         type="button"
       >
-        🔊 Practice both truths
+        🔊 SAY BOTH TRUTHS
       </button>
+    </div>
+  );
+}
+
+function QuestControls({
+  directions,
+  onAllDone,
+  onGrownup,
+  onStop,
+}: {
+  directions: string;
+  onAllDone: () => void;
+  onGrownup: () => void;
+  onStop: () => void;
+}) {
+  return (
+    <div className="quest-controls" aria-label="Quest controls">
+      <button
+        onClick={() => speak(directions)}
+        type="button"
+      >
+        <span aria-hidden="true">🔊</span>
+        <strong>HEAR AGAIN</strong>
+      </button>
+      <button onClick={onStop} type="button">
+        <span aria-hidden="true">⏹️</span>
+        <strong>STOP</strong>
+      </button>
+      <button onClick={onAllDone} type="button">
+        <span aria-hidden="true">✅</span>
+        <strong>ALL DONE</strong>
+      </button>
+      <button onClick={onGrownup} type="button">
+        <span aria-hidden="true">🤝</span>
+        <strong>GROWN-UP</strong>
+      </button>
+    </div>
+  );
+}
+
+function RewardReveal({
+  onAllDone,
+  onLater,
+  onPlace,
+  onPracticeAgain,
+  quest,
+}: {
+  onAllDone: () => void;
+  onLater: () => void;
+  onPlace: () => void;
+  onPracticeAgain: () => void;
+  quest: (typeof CORE_QUESTS)[number];
+}) {
+  const rewards = quest.unlocks
+    .map((rewardId) =>
+      SAFE_BASE_REWARDS.find((reward) => reward.id === rewardId),
+    )
+    .filter((reward): reward is (typeof SAFE_BASE_REWARDS)[number] =>
+      Boolean(reward),
+    );
+  const narration = `You unlocked ${rewards
+    .map((reward) => reward.name)
+    .join(" and ")}. ${rewards.map((reward) => reward.detail).join(" ")}`;
+
+  useEffect(() => {
+    speak(narration, `reward-reveal-${quest.id}`);
+  }, [narration, quest.id]);
+
+  return (
+    <div className="reward-reveal" aria-live="polite">
+      <span className="reward-kicker">✨ YOU UNLOCKED ✨</span>
+      <div className="reward-reveal-items">
+        {rewards.map((reward) => (
+          <button
+            aria-label={`Hear about ${reward.name}`}
+            key={reward.id}
+            onClick={() =>
+              speak(`${reward.name}. ${reward.detail}`, `reward-${reward.id}`)
+            }
+            type="button"
+          >
+            <span aria-hidden="true">{reward.emoji}</span>
+            <strong>{reward.name}</strong>
+            <small>{reward.detail}</small>
+            <i aria-hidden="true">🔊</i>
+          </button>
+        ))}
+      </div>
+      <h3>Practice builds your world.</h3>
+      <p>No points. No ranking. Your reward stays unlocked.</p>
+      <div className="reward-reveal-actions">
+        <button className="primary-button jumbo" onClick={onPlace} type="button">
+          🏝️ PUT IN MY BASE
+        </button>
+        <button
+          className="secondary-button"
+          onClick={onPracticeAgain}
+          type="button"
+        >
+          ↻ PRACTICE AGAIN
+        </button>
+        <button className="secondary-button" onClick={onLater} type="button">
+          LATER
+        </button>
+        <button className="text-button" onClick={onAllDone} type="button">
+          ✅ All done
+        </button>
+      </div>
     </div>
   );
 }
 
 function SafeBaseBuilder({
   onGrownup,
+  onPlayQuest,
   onToggleAdult,
   onToggleReward,
   placed,
@@ -1457,6 +1713,7 @@ function SafeBaseBuilder({
   unlocked,
 }: {
   onGrownup: () => void;
+  onPlayQuest: () => void;
   onToggleAdult: (adult: string) => void;
   onToggleReward: (reward: RewardId) => void;
   placed: RewardId[];
@@ -1529,6 +1786,13 @@ function SafeBaseBuilder({
               <span aria-hidden="true">🏝️</span>
               <strong>Your base is ready to build.</strong>
               <small>Complete a Core Quest, then place the reward here.</small>
+              <button
+                className="primary-button"
+                onClick={onPlayQuest}
+                type="button"
+              >
+                🕹️ PLAY A QUEST
+              </button>
             </div>
           )}
         </div>
@@ -1588,6 +1852,8 @@ function App() {
   const [auraRestored, setAuraRestored] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
   const [glossaryQuery, setGlossaryQuery] = useState("");
+  const [glossaryGroup, setGlossaryGroup] =
+    useState<FeelingGroupId>("all");
   const [glossaryEmotionId, setGlossaryEmotionId] = useState("shame");
   const [openWorld, setOpenWorld] = useState("notice");
   const [heroFeeling, setHeroFeeling] = useState("hurt");
@@ -1596,11 +1862,15 @@ function App() {
   const [arcadeSkillId, setArcadeSkillId] =
     useState<ArcadeSkillId>("sixSeven");
   const [coreQuestId, setCoreQuestId] = useState<CoreQuestId>("checkIn");
+  const [coreQuestRunKey, setCoreQuestRunKey] = useState(0);
+  const [completedQuestId, setCompletedQuestId] =
+    useState<CoreQuestId | null>(null);
   const [unlockedRewards, setUnlockedRewards] = useState<RewardId[]>([]);
   const [placedRewards, setPlacedRewards] = useState<RewardId[]>([]);
   const [safeAdults, setSafeAdults] = useState<string[]>(["My grown-up"]);
   const [grownupPowerOpen, setGrownupPowerOpen] = useState(false);
   const [littleReader, setLittleReader] = useState(true);
+  const grownupCloseRef = useRef<HTMLButtonElement>(null);
 
   const emotion =
     EMOTIONS.find((item) => item.id === emotionId) ?? EMOTIONS[0];
@@ -1609,27 +1879,43 @@ function App() {
   const powerUp = powerUpId ? POWER_UPS[powerUpId] : null;
   const visibleEmotions = useMemo(() => {
     const query = glossaryQuery.trim().toLowerCase();
-    if (!query) return EMOTIONS;
-    return EMOTIONS.filter((item) =>
-      `${item.name} ${item.alias} ${item.message}`.toLowerCase().includes(query),
-    );
-  }, [glossaryQuery]);
+    const group =
+      FEELING_GROUPS.find((item) => item.id === glossaryGroup) ??
+      FEELING_GROUPS[0];
+    return EMOTIONS.filter((item) => {
+      const inGroup = !littleReader || group.emotions.includes(item.id);
+      const matchesQuery =
+        !query ||
+        `${item.name} ${item.alias} ${item.message}`
+          .toLowerCase()
+          .includes(query);
+      return inGroup && matchesQuery;
+    });
+  }, [glossaryGroup, glossaryQuery, littleReader]);
   const arcadeSkill =
     ARCADE_SKILLS.find((item) => item.id === arcadeSkillId) ?? ARCADE_SKILLS[0];
   const coreQuest =
     CORE_QUESTS.find((item) => item.id === coreQuestId) ?? CORE_QUESTS[0];
+  const completedQuest = completedQuestId
+    ? CORE_QUESTS.find((item) => item.id === completedQuestId) ?? null
+    : null;
   const activeVibePack = VIBE_PACKS[vibePack];
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("power-up-pals-vibe-pack");
-    if (saved === "genAlpha" || saved === "creature" || saved === "straightUp") {
-      setVibePack(saved);
-    }
-    const savedReaderMode = window.localStorage.getItem(
-      "power-up-pals-little-reader",
-    );
-    if (savedReaderMode === "false") setLittleReader(false);
+    /* eslint-disable react-hooks/set-state-in-effect -- device-only preferences hydrate after mount */
     try {
+      const saved = window.localStorage.getItem("power-up-pals-vibe-pack");
+      if (
+        saved === "genAlpha" ||
+        saved === "creature" ||
+        saved === "straightUp"
+      ) {
+        setVibePack(saved);
+      }
+      const savedReaderMode = window.localStorage.getItem(
+        "power-up-pals-little-reader",
+      );
+      if (savedReaderMode === "false") setLittleReader(false);
       const unlocked = JSON.parse(
         window.localStorage.getItem("power-up-pals-unlocked-rewards") ?? "[]",
       );
@@ -1646,9 +1932,50 @@ function App() {
     } catch {
       // Keep the friendly defaults if old device data cannot be read.
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
+  useEffect(() => {
+    if (!grownupPowerOpen) return;
+    const priorFocus = document.activeElement as HTMLElement | null;
+    grownupCloseRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        stopVoice();
+        setGrownupPowerOpen(false);
+        return;
+      }
+      if (event.key === "Tab") {
+        const dialog = grownupCloseRef.current?.closest(
+          '[role="dialog"]',
+        ) as HTMLElement | null;
+        const focusable = Array.from(
+          dialog?.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ) ?? [],
+        );
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      priorFocus?.focus();
+    };
+  }, [grownupPowerOpen]);
+
   const go = (tab: Tab) => {
+    stopVoice();
+    setCoreQuestRunKey((current) => current + 1);
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -1674,16 +2001,53 @@ function App() {
   const completeCoreQuest = useCallback((id: CoreQuestId) => {
     const quest = CORE_QUESTS.find((item) => item.id === id);
     if (!quest) return;
+    stopVoice();
     setAuraRestored(true);
     setUnlockedRewards((current) => {
       const next = Array.from(new Set([...current, ...quest.unlocks]));
-      window.localStorage.setItem(
-        "power-up-pals-unlocked-rewards",
-        JSON.stringify(next),
-      );
+      try {
+        window.localStorage.setItem(
+          "power-up-pals-unlocked-rewards",
+          JSON.stringify(next),
+        );
+      } catch {
+        // Keep the in-session unlock when device storage is unavailable.
+      }
       return next;
     });
+    setCompletedQuestId(id);
   }, []);
+
+  const resetCoreQuest = () => {
+    stopVoice();
+    setCompletedQuestId(null);
+    setCoreQuestRunKey((current) => current + 1);
+  };
+
+  const finishCoreQuest = () => {
+    resetCoreQuest();
+    go("home");
+  };
+
+  const putCompletedRewardsInBase = () => {
+    if (!completedQuest) return;
+    setPlacedRewards((current) => {
+      const next = Array.from(
+        new Set([...current, ...completedQuest.unlocks]),
+      ) as RewardId[];
+      try {
+        window.localStorage.setItem(
+          "power-up-pals-placed-rewards",
+          JSON.stringify(next),
+        );
+      } catch {
+        // The world still updates for this session.
+      }
+      return next;
+    });
+    setCompletedQuestId(null);
+    go("worlds");
+  };
 
   const togglePlacedReward = (reward: RewardId) => {
     if (!unlockedRewards.includes(reward)) return;
@@ -1691,10 +2055,14 @@ function App() {
       const next = current.includes(reward)
         ? current.filter((item) => item !== reward)
         : [...current, reward];
-      window.localStorage.setItem(
-        "power-up-pals-placed-rewards",
-        JSON.stringify(next),
-      );
+      try {
+        window.localStorage.setItem(
+          "power-up-pals-placed-rewards",
+          JSON.stringify(next),
+        );
+      } catch {
+        // Keep the in-session arrangement when storage is unavailable.
+      }
       return next;
     });
   };
@@ -1704,15 +2072,23 @@ function App() {
       const next = current.includes(adult)
         ? current.filter((item) => item !== adult)
         : [...current, adult];
-      window.localStorage.setItem(
-        "power-up-pals-safe-adults",
-        JSON.stringify(next),
-      );
+      try {
+        window.localStorage.setItem(
+          "power-up-pals-safe-adults",
+          JSON.stringify(next),
+        );
+      } catch {
+        // Keep the in-session safe team when storage is unavailable.
+      }
       return next;
     });
   };
 
   const openGrownupPower = () => {
+    stopVoice();
+    if (!completedQuestId) {
+      setCoreQuestRunKey((current) => current + 1);
+    }
     setGrownupPowerOpen(true);
     speak(
       "Grown-up power-up. Connect first. Your body is having a huge alarm. I am here with you. We will solve it when your body is ready.",
@@ -1722,10 +2098,14 @@ function App() {
   const toggleReaderMode = () => {
     setLittleReader((current) => {
       const next = !current;
-      window.localStorage.setItem(
-        "power-up-pals-little-reader",
-        String(next),
-      );
+      try {
+        window.localStorage.setItem(
+          "power-up-pals-little-reader",
+          String(next),
+        );
+      } catch {
+        // The mode still changes for this session.
+      }
       speak(
         next
           ? "Little Reader mode. Big pictures. Short words. Tap Hear for help."
@@ -1746,7 +2126,11 @@ function App() {
 
   const chooseVibePack = (id: VibePackId) => {
     setVibePack(id);
-    window.localStorage.setItem("power-up-pals-vibe-pack", id);
+    try {
+      window.localStorage.setItem("power-up-pals-vibe-pack", id);
+    } catch {
+      // The selected language still works for this session.
+    }
   };
 
   const downloadVibePack = () => {
@@ -2166,7 +2550,8 @@ function App() {
               </div>
               <div className="cycle-grid" aria-label={`${emotion.name} cycle`}>
                 {cycle.map((item, index) => (
-                  <article
+                  <button
+                    aria-label={`Hear step ${index + 1}: ${item.title}`}
                     className={[
                       "cycle-card",
                       item.emotion ? "emotion-node" : "",
@@ -2176,6 +2561,13 @@ function App() {
                       .filter(Boolean)
                       .join(" ")}
                     key={`${emotion.id}-${item.title}-${powerUpId ?? "react"}`}
+                    onClick={() =>
+                      speak(
+                        `Step ${index + 1}. ${item.kid}. ${item.title}. ${item.value}`,
+                        `cycle-${emotion.id}-${index + 1}`,
+                      )
+                    }
+                    type="button"
                   >
                     <div className="cycle-topline">
                       <span className="cycle-index">{index + 1}</span>
@@ -2186,12 +2578,15 @@ function App() {
                     <span className="cycle-kid-label">{item.kid}</span>
                     <h3>{item.title}</h3>
                     <p>{item.value}</p>
+                    <span className="cycle-hear" aria-hidden="true">
+                      🔊 TAP TO HEAR
+                    </span>
                     {index < cycle.length - 1 && (
                       <span className="cycle-arrow" aria-hidden="true">
                         →
                       </span>
                     )}
-                  </article>
+                  </button>
                 ))}
               </div>
               <div className="reload-line">
@@ -2246,13 +2641,29 @@ function App() {
                       ending.
                     </p>
                   </div>
-                  <button
-                    className="secondary-button"
-                    onClick={() => setPowerUpId(null)}
-                    type="button"
-                  >
-                    See first reaction
-                  </button>
+                  <div className="win-actions">
+                    <button
+                      className="secondary-button"
+                      onClick={() => setPowerUpId(null)}
+                      type="button"
+                    >
+                      ↻ Try another power-up
+                    </button>
+                    <button
+                      className="secondary-button"
+                      onClick={() => go("glossary")}
+                      type="button"
+                    >
+                      🌈 Pick another feeling
+                    </button>
+                    <button
+                      className="text-button"
+                      onClick={() => go("home")}
+                      type="button"
+                    >
+                      ✅ All done
+                    </button>
+                  </div>
                 </div>
               )}
               {celebrate && (
@@ -2278,17 +2689,44 @@ function App() {
                   clues, its message, and what might help.
                 </p>
               </div>
-              <label className="search-box">
-                <span aria-hidden="true">🔎</span>
-                <span className="sr-only">Search emotions</span>
-                <input
-                  onChange={(event) => setGlossaryQuery(event.target.value)}
-                  placeholder="Search a feeling or clue"
-                  type="search"
-                  value={glossaryQuery}
-                />
-              </label>
+              {!littleReader && (
+                <label className="search-box">
+                  <span aria-hidden="true">🔎</span>
+                  <span className="sr-only">Search emotions</span>
+                  <input
+                    onChange={(event) => setGlossaryQuery(event.target.value)}
+                    placeholder="Search a feeling or clue"
+                    type="search"
+                    value={glossaryQuery}
+                  />
+                </label>
+              )}
             </section>
+
+            {littleReader && (
+              <section
+                className="feeling-groups"
+                aria-label="Choose a feeling group"
+              >
+                <span className="kicker">PICK A PICTURE GROUP</span>
+                <div>
+                  {FEELING_GROUPS.map((group) => (
+                    <button
+                      aria-pressed={glossaryGroup === group.id}
+                      key={group.id}
+                      onClick={() => {
+                        setGlossaryGroup(group.id);
+                        speak(group.spoken, `feeling-group-${group.id}`);
+                      }}
+                      type="button"
+                    >
+                      <span aria-hidden="true">{group.emoji}</span>
+                      <strong>{group.label}</strong>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
 
             <section className="glossary-layout">
               <div className="glossary-grid">
@@ -2302,7 +2740,10 @@ function App() {
                     }
                     data-color={item.color}
                     key={item.id}
-                    onClick={() => setGlossaryEmotionId(item.id)}
+                    onClick={() => {
+                      setGlossaryEmotionId(item.id);
+                      speak(`${item.name}. ${item.alias}.`);
+                    }}
                     type="button"
                   >
                     <span className="glossary-emoji" aria-hidden="true">
@@ -2406,6 +2847,7 @@ function App() {
 
             <SafeBaseBuilder
               onGrownup={openGrownupPower}
+              onPlayQuest={() => go("arcade")}
               onToggleAdult={toggleSafeAdult}
               onToggleReward={togglePlacedReward}
               placed={placedRewards}
@@ -2671,6 +3113,9 @@ function App() {
                     className={coreQuest.id === quest.id ? "selected" : ""}
                     key={quest.id}
                     onClick={() => {
+                      stopVoice();
+                      setCompletedQuestId(null);
+                      setCoreQuestRunKey((current) => current + 1);
                       setCoreQuestId(quest.id);
                       speak(
                         `${quest.title}. ${quest.stable}.`,
@@ -2708,35 +3153,58 @@ function App() {
                     </span>
                   </div>
                 </header>
-                <div className="core-quest-stage">
-                  {coreQuest.id === "checkIn" && (
-                    <FeelingsCheckIn
-                      emotionId={emotionId}
-                      onComplete={() => completeCoreQuest("checkIn")}
-                      onSelect={(id) => selectEmotion(id)}
+                {!completedQuest && (
+                  <QuestControls
+                    directions={CORE_DIRECTIONS[coreQuest.id]}
+                    onAllDone={finishCoreQuest}
+                    onGrownup={openGrownupPower}
+                    onStop={resetCoreQuest}
+                  />
+                )}
+                <div
+                  className="core-quest-stage"
+                  key={`${coreQuest.id}-${coreQuestRunKey}`}
+                >
+                  {completedQuest ? (
+                    <RewardReveal
+                      onAllDone={finishCoreQuest}
+                      onLater={resetCoreQuest}
+                      onPlace={putCompletedRewardsInBase}
+                      onPracticeAgain={resetCoreQuest}
+                      quest={completedQuest}
                     />
-                  )}
-                  {coreQuest.id === "slime" && (
-                    <div className="core-slime-stage">
-                      <SlimeBreathing
-                        onComplete={() => completeCoreQuest("slime")}
-                      />
-                    </div>
-                  )}
-                  {coreQuest.id === "freeze" && (
-                    <SigmaStopChallenge
-                      onComplete={() => completeCoreQuest("freeze")}
-                    />
-                  )}
-                  {coreQuest.id === "both" && (
-                    <SigmaBothChallenge
-                      onComplete={() => completeCoreQuest("both")}
-                    />
-                  )}
-                  {coreQuest.id === "repair" && (
-                    <RepairQuest
-                      onComplete={() => completeCoreQuest("repair")}
-                    />
+                  ) : (
+                    <>
+                      {coreQuest.id === "checkIn" && (
+                        <FeelingsCheckIn
+                          emotionId={emotionId}
+                          onComplete={() => completeCoreQuest("checkIn")}
+                          onSelect={(id) => selectEmotion(id)}
+                        />
+                      )}
+                      {coreQuest.id === "slime" && (
+                        <div className="core-slime-stage">
+                          <SlimeBreathing
+                            onComplete={() => completeCoreQuest("slime")}
+                          />
+                        </div>
+                      )}
+                      {coreQuest.id === "freeze" && (
+                        <SigmaStopChallenge
+                          onComplete={() => completeCoreQuest("freeze")}
+                        />
+                      )}
+                      {coreQuest.id === "both" && (
+                        <SigmaBothChallenge
+                          onComplete={() => completeCoreQuest("both")}
+                        />
+                      )}
+                      {coreQuest.id === "repair" && (
+                        <RepairQuest
+                          onComplete={() => completeCoreQuest("repair")}
+                        />
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -3126,7 +3594,11 @@ function App() {
             <button
               aria-label="Close grown-up power-up"
               className="dialog-close"
-              onClick={() => setGrownupPowerOpen(false)}
+              onClick={() => {
+                stopVoice();
+                setGrownupPowerOpen(false);
+              }}
+              ref={grownupCloseRef}
               type="button"
             >
               ×
