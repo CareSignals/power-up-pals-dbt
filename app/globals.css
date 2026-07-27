@@ -356,7 +356,18 @@ button:disabled {
   margin: 25px 0 24px;
 }
 
-.hero h1 span {
+.hero h1 .hero-product-name {
+  background: none;
+  color: #fff;
+  display: block;
+  font-size: 0.28em;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  margin-bottom: 18px;
+  text-transform: uppercase;
+}
+
+.hero h1 .hero-title-highlight {
   background: linear-gradient(90deg, var(--lime), #f8ff90, var(--aqua));
   -webkit-background-clip: text;
   background-clip: text;
@@ -370,6 +381,11 @@ button:disabled {
   line-height: 1.6;
   margin: 0;
   max-width: 540px;
+}
+
+.hero-copy > p strong {
+  color: #fff;
+  font-weight: 900;
 }
 
 .hero-actions {

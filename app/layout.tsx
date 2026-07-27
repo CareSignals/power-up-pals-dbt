@@ -8,10 +8,10 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Power-Up Pals — Build Your Chill World",
+  title: "Power-Up Pals: Build Your Chill World",
   description:
     "A playful, caregiver-supported DBT skills world for children ages 5–7.",
-  applicationName: "Power-Up Pals",
+  applicationName: "Power-Up Pals: Build Your Chill World",
   icons: {
     icon: "/icon.png",
     apple: "/icon.png",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     "emotion glossary",
   ],
   openGraph: {
-    title: "Power-Up Pals — Big Feelings. Mega Skills.",
+    title: "Power-Up Pals: Build Your Chill World",
     description:
       "Pick a feeling, run the emotion cycle, and choose a DBT power-up.",
     type: "website",

@@ -707,7 +707,7 @@ function App() {
             ✦
           </span>
           <span>
-            <strong>Power-Up Pals</strong>
+            <strong>Power-Up Pals:</strong>
             <small>Build Your Chill World</small>
           </span>
         </button>
@@ -742,12 +742,14 @@ function App() {
                   <span>NEW QUEST</span>
                   Real DBT skills. Kid-world language.
                 </div>
-                <h1>
-                  Big feelings.
+                <h1 aria-label="Power-Up Pals: Build Your Chill World">
+                  <span className="hero-product-name">Power-Up Pals:</span>
+                  Build Your
                   <br />
-                  <span>Mega skills.</span>
+                  <span className="hero-title-highlight">Chill World.</span>
                 </h1>
                 <p>
+                  <strong>Big feelings. Mega skills.</strong>{" "}
                   Pick a feeling, run it through the Emotion Machine, and choose
                   a power-up that changes the ending.
                 </p>

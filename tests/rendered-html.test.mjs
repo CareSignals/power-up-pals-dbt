@@ -29,7 +29,8 @@ test("server-renders the Power-Up Pals home experience", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>Power-Up Pals — Build Your Chill World<\/title>/i);
+  assert.match(html, /<title>Power-Up Pals: Build Your Chill World<\/title>/i);
+  assert.match(html, /aria-label="Power-Up Pals: Build Your Chill World"/i);
   assert.match(html, /Big feelings\./);
   assert.match(html, /Mega skills\./);
   assert.match(html, /Emotion Machine/);
