@@ -851,6 +851,8 @@ const CUSTOM_VOICE_CLIPS: Partial<Record<string, string>> = {
   // Example: pageHome: "/audio/custom/page-home.mp3"
 };
 
+const PUBLIC_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 let activeVoiceAudio: HTMLAudioElement | null = null;
 
 function stopVoice() {
@@ -2344,7 +2346,7 @@ function App() {
               <div className="hero-art">
                 <img
                   alt="Original capybara, axolotl, unicorn, and slime characters exploring a colorful emotion machine world"
-                  src="/assets/power-up-pals-world.png"
+                  src={`${PUBLIC_BASE_PATH}/assets/power-up-pals-world.png`}
                 />
                 <div className="floating-sticker sticker-one">6–7 RESET!</div>
                 <div className="floating-sticker sticker-two">

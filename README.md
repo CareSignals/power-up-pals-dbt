@@ -5,7 +5,10 @@ ages 5–7. It uses original characters, playful Gen Alpha language, large
 picture choices, spoken directions, and noncompetitive world-building to make
 emotion learning and coping-skill practice approachable.
 
-The live prototype is:
+Public GitHub Pages website:
+[caresignals.github.io/power-up-pals-dbt](https://caresignals.github.io/power-up-pals-dbt/)
+
+OpenAI Sites deployment:
 [power-up-pals-dbt.hopeandequit-3153.chatgpt.site](https://power-up-pals-dbt.hopeandequit-3153.chatgpt.site)
 
 ## Important scope
