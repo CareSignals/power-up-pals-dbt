@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 
@@ -54,6 +54,13 @@ export const metadata: Metadata = {
       "Caregiver-supported emotion skills, spoken play quests, and a buildable Safe Base for children ages 5–7.",
     images: [`${publicBasePath}/og-vibe-arcade.png`],
   },
+};
+
+export const viewport: Viewport = {
+  initialScale: 1,
+  themeColor: "#4326a5",
+  viewportFit: "cover",
+  width: "device-width",
 };
 
 export default function RootLayout({
