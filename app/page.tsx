@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Tab =
   | "home"
+  | "missions"
   | "machine"
   | "glossary"
   | "worlds"
@@ -14,6 +15,11 @@ type CoreQuestId = "checkIn" | "slime" | "freeze" | "both" | "repair";
 type RewardId = "slime" | "blocks" | "pet" | "music" | "costume" | "portal";
 type FeelingGroupId = "all" | "hotFast" | "alarm" | "lowHeavy" | "connection";
 type QuestPauseState = "stopped" | "done";
+type PlayStyle = "playWithMe" | "challengeMe";
+type NarratorTone = "calm" | "hype";
+type PalId = "cappy" | "axo" | "glitter" | "bothBot" | "djSlime";
+type BaseMood = "cozy" | "chaos" | "quiet";
+type RewardPosition = { x: number; y: number };
 type ArcadeSkillId =
   | "sixSeven"
   | "sigmaStop"
@@ -589,7 +595,9 @@ const FEELING_GROUPS: {
 
 const PAGE_DIRECTIONS: Record<Tab, string> = {
   home:
-    "Power-Up Pals. Big feelings. Mega skills. Pick a feeling, play a shared quest, or build your Safe Base.",
+    "Power-Up Pals. Big feelings. Mega skills. Pick a Pal Mission to play together, try the Emotion Machine, or build your Safe Base.",
+  missions:
+    "Pal Missions. Pick a pal and a play style. A grown-up goes first, the kid takes a turn, and both players practice one safe body move.",
   machine:
     "Emotion Machine. Pick a feeling. Notice what happened, the brain story, body clues, and the urge. Then pick a safe power-up.",
   glossary:
@@ -690,6 +698,176 @@ const CHARACTERS = [
       "I am the Alarm Monster. I try to protect you, but sometimes I guess wrong. Let us check.",
   },
 ];
+
+const PAL_MISSIONS: {
+  id: PalId;
+  emoji: string;
+  name: string;
+  power: string;
+  problem: string;
+  grownupTurn: string;
+  kidTurn: string;
+  move: string;
+  challenge: string;
+  choices: { label: string; spoken: string }[];
+  celebration: string;
+  unlock: RewardId;
+}[] = [
+  {
+    id: "cappy",
+    emoji: "🦫",
+    name: "Cappy",
+    power: "Notice Mode",
+    problem: "Cappy’s block bridge fell. His body wants to smash the last block.",
+    grownupTurn: "Grown-up: point to one thing that is still okay.",
+    kidTurn: "Kid: point to one thing Cappy can try next.",
+    move: "Walk like a super-slow capybara for five steps.",
+    challenge: "Find one fact and one brain guess in Cappy’s problem.",
+    choices: [
+      { label: "Ask for help", spoken: "Cappy can ask for help." },
+      { label: "Try one block", spoken: "Cappy can try one block at a time." },
+    ],
+    celebration: "Bridge reboot! Cappy found a slower next move.",
+    unlock: "blocks",
+  },
+  {
+    id: "axo",
+    emoji: "🦎",
+    name: "Axo",
+    power: "Body Reset",
+    problem: "Axo’s waiting turn feels forever. His zoomy feet want to bolt.",
+    grownupTurn: "Grown-up: do one strong wall push.",
+    kidTurn: "Kid: show Axo safe feet and pick where to wait.",
+    move: "Wiggle for six. Freeze for seven. No breath holding.",
+    challenge: "Name the body clue that says Axo needs a reset.",
+    choices: [
+      { label: "Wiggle + freeze", spoken: "Axo can wiggle, freeze, and wait." },
+      { label: "Get backup", spoken: "Axo can ask a safe grown-up to stay." },
+    ],
+    celebration: "Axo kept his body safe and got backup. Huge teamwork!",
+    unlock: "slime",
+  },
+  {
+    id: "glitter",
+    emoji: "🦄",
+    name: "Glitter",
+    power: "Feeling Colors",
+    problem: "Glitter was not picked first. Her colors turn hot and stormy.",
+    grownupTurn: "Grown-up: say, “Not first can really hurt.”",
+    kidTurn: "Kid: choose a color for Glitter’s feeling.",
+    move: "Find two things nearby that match Glitter’s feeling color.",
+    challenge: "Hold Both Mode: “I feel left out AND I still belong.”",
+    choices: [
+      { label: "Say how it feels", spoken: "Glitter can say, I feel left out." },
+      { label: "Ask to join next", spoken: "Glitter can ask, can I join next?" },
+    ],
+    celebration: "Rainbow repair! Glitter used words without hiding her feeling.",
+    unlock: "costume",
+  },
+  {
+    id: "bothBot",
+    emoji: "🤖",
+    name: "Both-Bot",
+    power: "Two Truths",
+    problem: "Both-Bot made a mistake and his shame alarm says, “I am bad.”",
+    grownupTurn: "Grown-up: say, “A mistake happened AND you still belong.”",
+    kidTurn: "Kid: tap your heart, then show safe hands.",
+    move: "Stomp one big feeling stomp, then open two gentle hands.",
+    challenge: "Build a two-truth sentence that does not blame the kid.",
+    choices: [
+      { label: "Tell the truth", spoken: "Both-Bot can tell what happened." },
+      { label: "Repair it", spoken: "Both-Bot can help fix the mistake." },
+    ],
+    celebration: "Both Mode online! Mistake and belonging can both be true.",
+    unlock: "portal",
+  },
+  {
+    id: "djSlime",
+    emoji: "🎧",
+    name: "DJ Slime",
+    power: "Slow Beat",
+    problem: "DJ Slime’s beat got interrupted. His Alarm Monster turns the volume up.",
+    grownupTurn: "Grown-up: stretch your hands like slow, gooey slime.",
+    kidTurn: "Kid: make the silliest slow-motion DJ pose.",
+    move: "Stretch every muscle like slime, then let it go soft.",
+    challenge: "Pick a slow beat that leaves enough room to think.",
+    choices: [
+      { label: "Slime goes slow", spoken: "Easy breath in. Slower breath out." },
+      { label: "Quiet beat", spoken: "DJ Slime can turn down the beat and notice." },
+    ],
+    celebration: "Brainrot boss defeated by the world’s slowest slime beat!",
+    unlock: "music",
+  },
+];
+
+const BODY_MOVES = [
+  { emoji: "🧱", name: "Wall Power", cue: "Push the wall with safe hands. Count three. Let go." },
+  { emoji: "🦫", name: "Cappy Walk", cue: "Take five super slow capybara steps." },
+  { emoji: "🌈", name: "Color Hunt", cue: "Find two things that match your feeling color." },
+  { emoji: "🫧", name: "Slime Stretch", cue: "Stretch like slime. Then let your body go soft." },
+  { emoji: "🤖", name: "Both-Bot Stomp", cue: "One big stomp. Then show two safe hands." },
+  { emoji: "🧸", name: "Soft Stuff Hunt", cue: "Find two soft things. Point, touch, or name them." },
+  { emoji: "🪨", name: "Boulder Push", cue: "Pretend to push a giant boulder. Then shake your arms loose." },
+  { emoji: "6️⃣", name: "6–7 Reset", cue: "Wiggle for six. Freeze and notice for seven." },
+] as const;
+
+const PAL_STORIES = [
+  {
+    id: "cappy-blocks",
+    palId: "cappy" as PalId,
+    emoji: "🦫",
+    title: "Cappy’s crashed bridge",
+    emotionId: "frustrated",
+    event: "Cappy’s block bridge falls again",
+    thought: "“I can’t do it. This level is impossible.”",
+    urge: "Smash the blocks or quit",
+    reaction: "Cappy sweeps the blocks away and turns his back",
+  },
+  {
+    id: "axo-wait",
+    palId: "axo" as PalId,
+    emoji: "🦎",
+    title: "Axo’s long wait",
+    emotionId: "worried",
+    event: "Axo has to wait and does not know how long",
+    thought: "“What if nobody remembers me?”",
+    urge: "Run, shout, or ask the same question again",
+    reaction: "Axo zooms away before the grown-up can help",
+  },
+  {
+    id: "glitter-left-out",
+    palId: "glitter" as PalId,
+    emoji: "🦄",
+    title: "Glitter is not first",
+    emotionId: "hurt",
+    event: "Another pal gets picked first",
+    thought: "“They do not want me here.”",
+    urge: "Hide, yell, or ruin the game",
+    reaction: "Glitter says, “Fine! I never wanted to play.”",
+  },
+  {
+    id: "bothbot-mistake",
+    palId: "bothBot" as PalId,
+    emoji: "🤖",
+    title: "Both-Bot’s mistake",
+    emotionId: "shame",
+    event: "Both-Bot spills the paint after being asked to slow down",
+    thought: "“I am bad. They will stop loving me.”",
+    urge: "Hide, blame, or say it did not happen",
+    reaction: "Both-Bot blames the Alarm Monster and runs away",
+  },
+  {
+    id: "slime-interrupt",
+    palId: "djSlime" as PalId,
+    emoji: "🎧",
+    title: "DJ Slime gets interrupted",
+    emotionId: "angry",
+    event: "The music stops in the middle of DJ Slime’s favorite beat",
+    thought: "“They wrecked it on purpose.”",
+    urge: "Yell and blast the music louder",
+    reaction: "DJ Slime turns everything up and nobody can talk",
+  },
+] as const;
 
 const DBT_SKILL_MAP = [
   ["Mindfulness", "Capybara Notice Mode", "Find what Cappy can see, hear, feel, and smell without judging it."],
@@ -840,6 +1018,7 @@ const VIBE_PACKS: Record<
 
 const NAV: { id: Tab; label: string; emoji: string }[] = [
   { id: "home", label: "Home", emoji: "🏝️" },
+  { id: "missions", label: "Pal Missions", emoji: "🚀" },
   { id: "machine", label: "Emotion Machine", emoji: "⚙️" },
   { id: "glossary", label: "Feelings", emoji: "📖" },
   { id: "worlds", label: "Skill Worlds", emoji: "🌀" },
@@ -855,6 +1034,7 @@ const CUSTOM_VOICE_CLIPS: Partial<Record<string, string>> = {
 const PUBLIC_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const TAB_HASHES: Record<Tab, string> = {
   home: "#/home",
+  missions: "#/missions",
   machine: "#/machine",
   glossary: "#/glossary",
   worlds: "#/worlds",
@@ -870,6 +1050,8 @@ function tabFromHash(hash: string): Tab {
 }
 
 let activeVoiceAudio: HTMLAudioElement | null = null;
+let activeNarratorTone: NarratorTone = "calm";
+let narrationQuiet = false;
 
 function stopVoice() {
   if (typeof window === "undefined") return;
@@ -880,15 +1062,20 @@ function stopVoice() {
 }
 
 function speakWithDeviceVoice(text: string) {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  if (
+    typeof window === "undefined" ||
+    narrationQuiet ||
+    !("speechSynthesis" in window)
+  )
+    return;
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 0.82;
-  utterance.pitch = 1.05;
+  utterance.rate = activeNarratorTone === "hype" ? 0.96 : 0.82;
+  utterance.pitch = activeNarratorTone === "hype" ? 1.18 : 1.02;
   window.speechSynthesis.speak(utterance);
 }
 
 function speak(text: string, cue?: string) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || narrationQuiet) return;
   stopVoice();
   const customClip = cue ? CUSTOM_VOICE_CLIPS[cue] : undefined;
   if (!customClip) {
@@ -1863,24 +2050,448 @@ function RewardReveal({
   );
 }
 
-function SafeBaseBuilder({
+function NarratorControls({
+  narratorQuiet,
+  narratorTone,
+  onQuietChange,
+  onToneChange,
+  replayText,
+}: {
+  narratorQuiet: boolean;
+  narratorTone: NarratorTone;
+  onQuietChange: (quiet: boolean) => void;
+  onToneChange: (tone: NarratorTone) => void;
+  replayText: string;
+}) {
+  return (
+    <section className="narrator-card" aria-labelledby="narrator-title">
+      <div className="narrator-avatar" aria-hidden="true">
+        🎙️
+      </div>
+      <div>
+        <span className="kicker">PICK THE HOST VIBE</span>
+        <h2 id="narrator-title">How should the Pal Host sound?</h2>
+        <p>Every important screen can be heard. Quiet mode stops narration.</p>
+      </div>
+      <div className="narrator-choices" role="group" aria-label="Narrator style">
+        <button
+          aria-pressed={narratorTone === "calm"}
+          onClick={() => onToneChange("calm")}
+          type="button"
+        >
+          🌙 Calm Voice
+        </button>
+        <button
+          aria-pressed={narratorTone === "hype"}
+          onClick={() => onToneChange("hype")}
+          type="button"
+        >
+          ⚡ Hype Voice
+        </button>
+        <button
+          aria-pressed={narratorQuiet}
+          onClick={() => onQuietChange(!narratorQuiet)}
+          type="button"
+        >
+          {narratorQuiet ? "🔇 Quiet is on" : "🔊 Voice is on"}
+        </button>
+        <button
+          disabled={narratorQuiet}
+          onClick={() => speak(replayText, "pal-host-replay")}
+          type="button"
+        >
+          ↻ Hear it again
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function SillySurprise() {
+  const surprises = [
+    ["🎩", "Hat swap incoming", "Cappy is now wearing three tiny hats."],
+    ["🫧", "Slime sneeze incoming", "DJ Slime sneezed one polite bubble."],
+    ["🌈", "Color glitch incoming", "Both-Bot’s left sock turned rainbow."],
+    ["🦆", "Tiny visitor incoming", "A pixel duck walked through the portal."],
+    ["🎉", "Confetti clue incoming", "Axo found five pieces of pretend confetti."],
+  ] as const;
+  const [stage, setStage] = useState<"idle" | "warning" | "revealed">("idle");
+  const [surpriseIndex, setSurpriseIndex] = useState(0);
+  const surprise = surprises[surpriseIndex];
+
+  const prepare = () => {
+    setSurpriseIndex((current) => (current + 1) % surprises.length);
+    setStage("warning");
+    speak("Clue: a harmless silly surprise is ready. Tap I am ready to reveal it.");
+  };
+
+  return (
+    <aside className={`silly-surprise surprise-${stage}`}>
+      <span className="surprise-icon" aria-hidden="true">
+        {stage === "revealed" ? surprise[0] : "🎁"}
+      </span>
+      <div aria-live="polite">
+        <strong>
+          {stage === "idle"
+            ? "Optional silly surprise"
+            : stage === "warning"
+              ? surprise[1]
+              : surprise[2]}
+        </strong>
+        <small>
+          {stage === "idle"
+            ? "You get a clue first. No jump scares."
+            : stage === "warning"
+              ? "Nothing loud, scary, or tricky."
+              : "That was the whole surprise."}
+        </small>
+      </div>
+      {stage === "warning" ? (
+        <button
+          onClick={() => {
+            setStage("revealed");
+            speak(surprise[2]);
+          }}
+          type="button"
+        >
+          I’M READY
+        </button>
+      ) : (
+        <button onClick={prepare} type="button">
+          {stage === "idle" ? "SHOW A CLUE" : "ANOTHER ONE"}
+        </button>
+      )}
+    </aside>
+  );
+}
+
+function PalMissionHub({
+  narratorQuiet,
+  narratorTone,
+  onComplete,
   onGrownup,
+  onQuietChange,
+  onSelectPal,
+  onStyleChange,
+  onToneChange,
+  playStyle,
+  selectedPalId,
+}: {
+  narratorQuiet: boolean;
+  narratorTone: NarratorTone;
+  onComplete: (reward: RewardId) => void;
+  onGrownup: () => void;
+  onQuietChange: (quiet: boolean) => void;
+  onSelectPal: (pal: PalId) => void;
+  onStyleChange: (style: PlayStyle) => void;
+  onToneChange: (tone: NarratorTone) => void;
+  playStyle: PlayStyle;
+  selectedPalId: PalId;
+}) {
+  const [step, setStep] = useState(0);
+  const [moveIndex, setMoveIndex] = useState(0);
+  const mission =
+    PAL_MISSIONS.find((item) => item.id === selectedPalId) ?? PAL_MISSIONS[0];
+  const stages = [
+    {
+      tag: "PAL PROBLEM",
+      emoji: mission.emoji,
+      title: `${mission.name} needs your team`,
+      text: mission.problem,
+    },
+    {
+      tag: "GROWN-UP TURN",
+      emoji: "🤝",
+      title: "Pass it to the grown-up",
+      text: mission.grownupTurn,
+    },
+    {
+      tag: "KID TURN",
+      emoji: "🫵",
+      title: "Pass it to the kid",
+      text: mission.kidTurn,
+    },
+    {
+      tag: "MOVE TOGETHER",
+      emoji: "💪",
+      title: "Both players do the move",
+      text: mission.move,
+    },
+  ];
+  const currentStage = stages[Math.min(step, stages.length - 1)];
+  const replayText =
+    step < 4
+      ? `${currentStage.tag}. ${currentStage.title}. ${currentStage.text}`
+      : `${mission.name} is ready. Pick one safe move together.`;
+
+  const choosePal = (pal: PalId) => {
+    onSelectPal(pal);
+    setStep(0);
+    const next = PAL_MISSIONS.find((item) => item.id === pal) ?? PAL_MISSIONS[0];
+    speak(`${next.name}. ${next.power}. ${next.problem}`, `mission-${pal}`);
+  };
+
+  return (
+    <>
+      <section className="mission-setup" aria-labelledby="mission-pick-title">
+        <div className="section-heading inline-heading">
+          <div>
+            <span className="kicker">CHOOSE YOUR CO-OP</span>
+            <h2 id="mission-pick-title">Who needs your team?</h2>
+          </div>
+          <button className="grownup-mini" onClick={onGrownup} type="button">
+            🤝 Get my grown-up
+          </button>
+        </div>
+        <div className="pal-mission-picker" role="group" aria-label="Choose a pal">
+          {PAL_MISSIONS.map((pal) => (
+            <button
+              aria-pressed={selectedPalId === pal.id}
+              className={selectedPalId === pal.id ? "selected" : ""}
+              key={pal.id}
+              onClick={() => choosePal(pal.id)}
+              type="button"
+            >
+              <span aria-hidden="true">{pal.emoji}</span>
+              <strong>{pal.name}</strong>
+              <small>{pal.power}</small>
+            </button>
+          ))}
+        </div>
+        <div className="play-style-picker" role="group" aria-label="Choose play style">
+          <button
+            aria-pressed={playStyle === "playWithMe"}
+            onClick={() => {
+              onStyleChange("playWithMe");
+              speak("Play With Me. Short turns, big pictures, and grown-up teamwork.");
+            }}
+            type="button"
+          >
+            <span aria-hidden="true">🫶</span>
+            <strong>PLAY WITH ME</strong>
+            <small>Short • spoken • together</small>
+          </button>
+          <button
+            aria-pressed={playStyle === "challengeMe"}
+            onClick={() => {
+              onStyleChange("challengeMe");
+              speak("Challenge Me. Add a clue, a strategy, and a two-truth challenge.");
+            }}
+            type="button"
+          >
+            <span aria-hidden="true">🧩</span>
+            <strong>CHALLENGE ME</strong>
+            <small>Story • clue • strategy</small>
+          </button>
+        </div>
+      </section>
+
+      <NarratorControls
+        narratorQuiet={narratorQuiet}
+        narratorTone={narratorTone}
+        onQuietChange={onQuietChange}
+        onToneChange={onToneChange}
+        replayText={replayText}
+      />
+
+      <section className="mission-stage" aria-labelledby="mission-stage-title">
+        <div className="mission-progress" aria-label={`Mission step ${step + 1} of 5`}>
+          {[0, 1, 2, 3, 4].map((dot) => (
+            <span className={dot <= step ? "done" : ""} key={dot}>
+              {dot + 1}
+            </span>
+          ))}
+        </div>
+        {step < 4 ? (
+          <>
+            <span className="mission-stage-emoji" aria-hidden="true">
+              {currentStage.emoji}
+            </span>
+            <div>
+              <span className="kicker">{currentStage.tag}</span>
+              <h2 id="mission-stage-title">{currentStage.title}</h2>
+              <p>{currentStage.text}</p>
+              {playStyle === "challengeMe" && (
+                <div className="challenge-clue">
+                  <strong>🧩 Bonus brain clue</strong>
+                  <span>{mission.challenge}</span>
+                </div>
+              )}
+            </div>
+            <div className="mission-stage-actions">
+              <button
+                className="secondary-button"
+                onClick={() => speak(replayText)}
+                type="button"
+              >
+                🔊 HEAR
+              </button>
+              <button
+                className="primary-button jumbo"
+                onClick={() => {
+                  setStep(step + 1);
+                  speak(
+                    step === 0
+                      ? mission.grownupTurn
+                      : step === 1
+                        ? mission.kidTurn
+                        : step === 2
+                          ? mission.move
+                          : "Pick one safe move together.",
+                  );
+                }}
+                type="button"
+              >
+                {step === 0 ? "START CO-OP" : "WE DID IT"} →
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="mission-choice">
+            <span className="mission-stage-emoji" aria-hidden="true">
+              🚪
+            </span>
+            <span className="kicker">CHOICE GATE</span>
+            <h2 id="mission-stage-title">Pick the safe move together</h2>
+            <div role="group" aria-label="Choose a safe move">
+              {mission.choices.map((choice) => (
+                <button
+                  key={choice.label}
+                  onClick={() => {
+                    speak(`${choice.spoken} ${mission.celebration}`);
+                    onComplete(mission.unlock);
+                    setStep(0);
+                  }}
+                  type="button"
+                >
+                  <span aria-hidden="true">✨</span>
+                  <strong>{choice.label}</strong>
+                  <small>Safe • kind • effective</small>
+                </button>
+              ))}
+            </div>
+            <p>{mission.celebration}</p>
+          </div>
+        )}
+      </section>
+
+      <section className="body-move-lab" aria-labelledby="body-move-title">
+        <div className="section-heading inline-heading">
+          <div>
+            <span className="kicker">NO CAMERA. NO SCORE.</span>
+            <h2 id="body-move-title">Pick a Body Power Move</h2>
+          </div>
+          <p>Moving together can help the body get ready to choose.</p>
+        </div>
+        <div className="body-move-grid" role="group" aria-label="Body power moves">
+          {BODY_MOVES.map((move, index) => (
+            <button
+              aria-pressed={moveIndex === index}
+              key={move.name}
+              onClick={() => {
+                setMoveIndex(index);
+                speak(`${move.name}. ${move.cue}`);
+              }}
+              type="button"
+            >
+              <span aria-hidden="true">{move.emoji}</span>
+              <strong>{move.name}</strong>
+              <small>{move.cue}</small>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <SillySurprise />
+    </>
+  );
+}
+
+function DraggableBaseItem({
+  active,
+  onActivate,
+  onMove,
+  position,
+  reward,
+}: {
+  active: boolean;
+  onActivate: () => void;
+  onMove: (position: RewardPosition) => void;
+  position: RewardPosition;
+  reward: (typeof SAFE_BASE_REWARDS)[number];
+}) {
+  const dragged = useRef(false);
+
+  return (
+    <button
+      aria-label={`${reward.name}. Drag to move, or tap to use it.`}
+      className={`placed-item draggable-base-item${active ? " playing" : ""}`}
+      onClick={() => {
+        if (dragged.current) {
+          dragged.current = false;
+          return;
+        }
+        onActivate();
+      }}
+      onPointerDown={(event) => {
+        dragged.current = false;
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }}
+      onPointerMove={(event) => {
+        if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+        const world = event.currentTarget.closest(".placed-rewards");
+        const bounds = world?.getBoundingClientRect();
+        if (!bounds) return;
+        dragged.current = true;
+        onMove({
+          x: Math.max(8, Math.min(92, ((event.clientX - bounds.left) / bounds.width) * 100)),
+          y: Math.max(12, Math.min(82, ((event.clientY - bounds.top) / bounds.height) * 100)),
+        });
+      }}
+      style={{ left: `${position.x}%`, top: `${position.y}%` }}
+      type="button"
+    >
+      <span aria-hidden="true">{reward.emoji}</span>
+      <small>{reward.name}</small>
+    </button>
+  );
+}
+
+function SafeBaseBuilder({
+  baseMood,
+  onGrownup,
+  onMoodChange,
+  onMoveReward,
   onPlayQuest,
   onToggleAdult,
   onToggleReward,
   placed,
+  positions,
   safeAdults,
   unlocked,
 }: {
+  baseMood: BaseMood;
   onGrownup: () => void;
+  onMoodChange: (mood: BaseMood) => void;
+  onMoveReward: (reward: RewardId, position: RewardPosition) => void;
   onPlayQuest: () => void;
   onToggleAdult: (adult: string) => void;
   onToggleReward: (reward: RewardId) => void;
   placed: RewardId[];
+  positions: Partial<Record<RewardId, RewardPosition>>;
   safeAdults: string[];
   unlocked: RewardId[];
 }) {
   const adultChoices = ["My grown-up", "Teacher or helper", "Another safe adult"];
+  const [activeReward, setActiveReward] = useState<RewardId | null>(null);
+  const rewardActions: Record<RewardId, string> = {
+    slime: "The slime pond stretches slowly, then goes soft.",
+    blocks: "The blocks build a cozy boundary with a doorway.",
+    pet: "The comfort pet sits close. It does not need you to talk.",
+    music: "DJ Beat Pad plays a pretend slow and steady beat.",
+    costume: "Silly hat activated. It is okay to laugh and still have a feeling.",
+    portal: "The portal carries two truths together.",
+  };
 
   return (
     <section className="safe-base-builder" aria-labelledby="safe-base-title">
@@ -1888,11 +2499,36 @@ function SafeBaseBuilder({
         <span className="kicker">BUILD YOUR CHILL WORLD</span>
         <h2 id="safe-base-title">My Safe Base</h2>
         <p>
-          Practice a Core Quest to unlock cozy world pieces. Tap an unlocked
-          item to put it in—or take it out. No points, ranking, or losing items.
+          Drag unlocked things anywhere. Tap one to see it work. Nothing gets
+          lost, and there are no points or rankings.
         </p>
-        <div className="safe-adult-picks">
-          <strong>Who can be on my safe team?</strong>
+        <div className="base-mood-picks" role="group" aria-label="Safe Base weather">
+          {([
+            ["cozy", "🌅 Cozy Lights"],
+            ["chaos", "🌦️ Chaos Weather"],
+            ["quiet", "🌙 Quiet Corner"],
+          ] as [BaseMood, string][]).map(([mood, label]) => (
+            <button
+              aria-pressed={baseMood === mood}
+              key={mood}
+              onClick={() => {
+                onMoodChange(mood);
+                speak(
+                  mood === "quiet"
+                    ? "Quiet Corner. Soft light and fewer sounds."
+                    : mood === "chaos"
+                      ? "Chaos weather outside. Safe Base stays connected inside."
+                      : "Cozy lights are on.",
+                );
+              }}
+              type="button"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="safe-adult-picks" role="group" aria-label="Choose safe adults">
+          <strong>Who can wait by my portal?</strong>
           {adultChoices.map((adult) => (
             <button
               aria-pressed={safeAdults.includes(adult)}
@@ -1909,11 +2545,16 @@ function SafeBaseBuilder({
         </div>
       </div>
 
-      <div className="safe-base-world">
+      <div className={`safe-base-world base-mood-${baseMood}`}>
         <div className="base-sky" aria-hidden="true">
-          <span>☁️</span>
-          <span>⭐</span>
-          <span>☁️</span>
+          <span>{baseMood === "chaos" ? "🌧️" : "☁️"}</span>
+          <span>{baseMood === "quiet" ? "🌙" : "⭐"}</span>
+          <span>{baseMood === "chaos" ? "🌈" : "☁️"}</span>
+        </div>
+        <div className="safe-adults-at-portal" aria-label="Safe adults at the portal">
+          {safeAdults.map((adult) => (
+            <span key={adult}>🛡️ {adult}</span>
+          ))}
         </div>
         <div className="placed-rewards">
           {placed.length ? (
@@ -1923,44 +2564,42 @@ function SafeBaseBuilder({
               );
               if (!reward) return null;
               return (
-                <button
-                  aria-label={`Remove ${reward.name} from my Safe Base`}
-                  className={`placed-item placed-${index + 1}`}
+                <DraggableBaseItem
+                  active={activeReward === reward.id}
                   key={reward.id}
-                  onClick={() => {
-                    onToggleReward(reward.id);
-                    speak(
-                      `${reward.name}. Out of your Safe Base.`,
-                      `reward-${reward.id}-out`,
-                    );
+                  onActivate={() => {
+                    setActiveReward(reward.id);
+                    speak(rewardActions[reward.id], `base-play-${reward.id}`);
+                    window.setTimeout(() => setActiveReward(null), 1400);
                   }}
-                  type="button"
-                >
-                  <span aria-hidden="true">{reward.emoji}</span>
-                  <small>{reward.name}</small>
-                </button>
+                  onMove={(position) => onMoveReward(reward.id, position)}
+                  position={
+                    positions[reward.id] ?? {
+                      x: 18 + (index % 3) * 30,
+                      y: 30 + Math.floor(index / 3) * 34,
+                    }
+                  }
+                  reward={reward}
+                />
               );
             })
           ) : (
             <div className="empty-base">
               <span aria-hidden="true">🏝️</span>
               <strong>Your base is ready to build.</strong>
-              <small>Complete a Core Quest, then place the reward here.</small>
-              <button
-                className="primary-button"
-                onClick={onPlayQuest}
-                type="button"
-              >
-                🕹️ PLAY A QUEST
+              <small>Complete a Pal Mission or Core Quest, then place a reward.</small>
+              <button className="primary-button" onClick={onPlayQuest} type="button">
+                🚀 PLAY A MISSION
               </button>
             </div>
           )}
         </div>
-        <button
-          className="base-grownup-button"
-          onClick={onGrownup}
-          type="button"
-        >
+        {activeReward && (
+          <div className={`base-reward-effect effect-${activeReward}`} aria-live="polite">
+            {rewardActions[activeReward]}
+          </div>
+        )}
+        <button className="base-grownup-button" onClick={onGrownup} type="button">
           🤝 GET A SAFE GROWN-UP
         </button>
       </div>
@@ -1971,7 +2610,7 @@ function SafeBaseBuilder({
           const isPlaced = placed.includes(reward.id);
           const unlockQuest =
             CORE_QUESTS.find((quest) => quest.unlocks.includes(reward.id))
-              ?.title ?? "Core Quest";
+              ?.title ?? "Pal Mission";
           return (
             <button
               aria-label={
@@ -1985,15 +2624,12 @@ function SafeBaseBuilder({
               onClick={() => {
                 if (!isUnlocked) {
                   speak(
-                    `${reward.name} is locked. Practice the ${unlockQuest} quest to unlock it.`,
+                    `${reward.name} is locked. Practice a Pal Mission or the ${unlockQuest} quest to unlock it.`,
                   );
                   return;
                 }
                 onToggleReward(reward.id);
-                speak(
-                  `${reward.name}. ${reward.detail}`,
-                  `reward-${reward.id}`,
-                );
+                speak(`${reward.name}. ${reward.detail}`, `reward-${reward.id}`);
               }}
               type="button"
             >
@@ -2004,7 +2640,7 @@ function SafeBaseBuilder({
                   ? isPlaced
                     ? "In my base"
                     : reward.detail
-                  : "Practice a Core Quest to unlock"}
+                  : "Practice a mission to unlock"}
               </small>
             </button>
           );
@@ -2040,6 +2676,17 @@ function App() {
   const [unlockedRewards, setUnlockedRewards] = useState<RewardId[]>([]);
   const [placedRewards, setPlacedRewards] = useState<RewardId[]>([]);
   const [safeAdults, setSafeAdults] = useState<string[]>(["My grown-up"]);
+  const [selectedPalId, setSelectedPalId] = useState<PalId>("cappy");
+  const [playStyle, setPlayStyle] = useState<PlayStyle>("playWithMe");
+  const [narratorTone, setNarratorTone] = useState<NarratorTone>("calm");
+  const [narratorQuiet, setNarratorQuiet] = useState(false);
+  const [baseMood, setBaseMood] = useState<BaseMood>("cozy");
+  const [rewardPositions, setRewardPositions] = useState<
+    Partial<Record<RewardId, RewardPosition>>
+  >({});
+  const [machineStoryId, setMachineStoryId] = useState<string | null>(
+    "cappy-blocks",
+  );
   const [grownupPowerOpen, setGrownupPowerOpen] = useState(false);
   const [littleReader, setLittleReader] = useState(true);
   const [routeAnnouncement, setRouteAnnouncement] = useState("");
@@ -2084,6 +2731,8 @@ function App() {
     ? CORE_QUESTS.find((item) => item.id === completedQuestId) ?? null
     : null;
   const activeVibePack = VIBE_PACKS[vibePack];
+  const activeMachineStory =
+    PAL_STORIES.find((story) => story.id === machineStoryId) ?? null;
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- device-only preferences hydrate after mount */
@@ -2110,14 +2759,87 @@ function App() {
         window.localStorage.getItem("power-up-pals-safe-adults") ??
           '["My grown-up"]',
       );
+      const phaseB = JSON.parse(
+        window.localStorage.getItem("power-up-pals-phase-b-settings") ?? "{}",
+      ) as {
+        baseMood?: BaseMood;
+        narratorQuiet?: boolean;
+        narratorTone?: NarratorTone;
+        playStyle?: PlayStyle;
+        rewardPositions?: Partial<Record<RewardId, RewardPosition>>;
+        selectedPalId?: PalId;
+      };
       if (Array.isArray(unlocked)) setUnlockedRewards(unlocked);
       if (Array.isArray(placed)) setPlacedRewards(placed);
       if (Array.isArray(adults)) setSafeAdults(adults);
+      if (PAL_MISSIONS.some((pal) => pal.id === phaseB.selectedPalId)) {
+        setSelectedPalId(phaseB.selectedPalId ?? "cappy");
+      }
+      if (
+        phaseB.playStyle === "playWithMe" ||
+        phaseB.playStyle === "challengeMe"
+      ) {
+        setPlayStyle(phaseB.playStyle);
+      }
+      if (phaseB.narratorTone === "calm" || phaseB.narratorTone === "hype") {
+        setNarratorTone(phaseB.narratorTone);
+        activeNarratorTone = phaseB.narratorTone;
+      }
+      if (typeof phaseB.narratorQuiet === "boolean") {
+        setNarratorQuiet(phaseB.narratorQuiet);
+        narrationQuiet = phaseB.narratorQuiet;
+      }
+      if (
+        phaseB.baseMood === "cozy" ||
+        phaseB.baseMood === "chaos" ||
+        phaseB.baseMood === "quiet"
+      ) {
+        setBaseMood(phaseB.baseMood);
+      }
+      if (phaseB.rewardPositions && typeof phaseB.rewardPositions === "object") {
+        setRewardPositions(phaseB.rewardPositions);
+      }
     } catch {
       // Keep the friendly defaults if old device data cannot be read.
     }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
+
+  const persistPhaseBSettings = useCallback(
+    (overrides: {
+      baseMood?: BaseMood;
+      narratorQuiet?: boolean;
+      narratorTone?: NarratorTone;
+      playStyle?: PlayStyle;
+      rewardPositions?: Partial<Record<RewardId, RewardPosition>>;
+      selectedPalId?: PalId;
+    }) => {
+      try {
+        window.localStorage.setItem(
+          "power-up-pals-phase-b-settings",
+          JSON.stringify({
+            baseMood,
+            narratorQuiet,
+            narratorTone,
+            playStyle,
+            rewardPositions,
+            selectedPalId,
+            ...overrides,
+          }),
+        );
+      } catch {
+        // Phase B preferences still work for this session.
+      }
+    },
+    [
+      baseMood,
+      narratorQuiet,
+      narratorTone,
+      playStyle,
+      rewardPositions,
+      selectedPalId,
+    ],
+  );
 
   useEffect(() => {
     const syncTabFromHash = () => {
@@ -2208,6 +2930,7 @@ function App() {
 
   const selectEmotion = (id: string, goToMachine = false) => {
     setEmotionId(id);
+    setMachineStoryId(null);
     setPowerUpId(null);
     setMachineCycleStep(0);
     if (goToMachine) go("machine");
@@ -2306,6 +3029,84 @@ function App() {
       } catch {
         // Keep the in-session arrangement when storage is unavailable.
       }
+      return next;
+    });
+  };
+
+  const completePalMission = (reward: RewardId) => {
+    setAuraRestored(true);
+    setUnlockedRewards((current) => {
+      const next = Array.from(new Set([...current, reward]));
+      try {
+        window.localStorage.setItem(
+          "power-up-pals-unlocked-rewards",
+          JSON.stringify(next),
+        );
+      } catch {
+        // Keep the in-session unlock when device storage is unavailable.
+      }
+      return next;
+    });
+    setPlacedRewards((current) => {
+      if (current.includes(reward)) return current;
+      const next = [...current, reward];
+      try {
+        window.localStorage.setItem(
+          "power-up-pals-placed-rewards",
+          JSON.stringify(next),
+        );
+      } catch {
+        // Keep the in-session placement when device storage is unavailable.
+      }
+      return next;
+    });
+  };
+
+  const choosePal = (pal: PalId) => {
+    setSelectedPalId(pal);
+    persistPhaseBSettings({ selectedPalId: pal });
+  };
+
+  const choosePlayStyle = (style: PlayStyle) => {
+    setPlayStyle(style);
+    persistPhaseBSettings({ playStyle: style });
+  };
+
+  const chooseNarratorTone = (tone: NarratorTone) => {
+    stopVoice();
+    activeNarratorTone = tone;
+    setNarratorTone(tone);
+    persistPhaseBSettings({ narratorTone: tone });
+    window.setTimeout(
+      () =>
+        speak(
+          tone === "hype"
+            ? "Hype Voice online. Big energy, clear directions."
+            : "Calm Voice online. Slow, steady, and clear.",
+        ),
+      20,
+    );
+  };
+
+  const chooseNarratorQuiet = (quiet: boolean) => {
+    stopVoice();
+    narrationQuiet = quiet;
+    setNarratorQuiet(quiet);
+    persistPhaseBSettings({ narratorQuiet: quiet });
+    if (!quiet) {
+      window.setTimeout(() => speak("Voice is back on."), 20);
+    }
+  };
+
+  const chooseBaseMood = (mood: BaseMood) => {
+    setBaseMood(mood);
+    persistPhaseBSettings({ baseMood: mood });
+  };
+
+  const moveBaseReward = (reward: RewardId, position: RewardPosition) => {
+    setRewardPositions((current) => {
+      const next = { ...current, [reward]: position };
+      persistPhaseBSettings({ rewardPositions: next });
       return next;
     });
   };
@@ -2409,13 +3210,13 @@ function App() {
       icon: "🎬",
       title: "What happened",
       kid: "No-cap event",
-      value: emotion.event,
+      value: activeMachineStory?.event ?? emotion.event,
     },
     {
       icon: "🧠",
       title: "Brain story",
       kid: "Fact, guess, or both?",
-      value: emotion.thought,
+      value: activeMachineStory?.thought ?? emotion.thought,
     },
     {
       icon: "💓",
@@ -2434,7 +3235,7 @@ function App() {
       icon: "🏃",
       title: "Action urge",
       kid: "What move showed up?",
-      value: emotion.urge,
+      value: activeMachineStory?.urge ?? emotion.urge,
     },
     {
       icon: powerUp ? powerUp.emoji : "🚪",
@@ -2449,7 +3250,9 @@ function App() {
       icon: "📣",
       title: "Action + signal",
       kid: "What others see",
-      value: powerUp ? powerUp.action : emotion.reaction,
+      value: powerUp
+        ? powerUp.action
+        : (activeMachineStory?.reaction ?? emotion.reaction),
       changed: Boolean(powerUp),
     },
     {
@@ -2475,15 +3278,17 @@ function App() {
   ];
   const littleCycleValues = [
     emotion.vulnerability,
-    emotion.event,
-    emotion.thought,
+    activeMachineStory?.event ?? emotion.event,
+    activeMachineStory?.thought ?? emotion.thought,
     emotion.body,
     emotion.message,
-    emotion.urge,
+    activeMachineStory?.urge ?? emotion.urge,
     powerUp
       ? `Try ${powerUp.label}.`
       : "Pause here. You can practice the next move.",
-    powerUp ? powerUp.action : emotion.reaction,
+    powerUp
+      ? powerUp.action
+      : (activeMachineStory?.reaction ?? emotion.reaction),
     powerUp ? powerUp.after : emotion.after,
   ];
   const littleCycle = cycle.map((item, index) => ({
@@ -2553,6 +3358,20 @@ function App() {
           </button>
           <button
             aria-label={
+              narratorQuiet
+                ? "Narration is quiet. Turn voice on."
+                : "Turn narration off."
+            }
+            aria-pressed={narratorQuiet}
+            className="narrator-quiet-button"
+            onClick={() => chooseNarratorQuiet(!narratorQuiet)}
+            type="button"
+          >
+            <span aria-hidden="true">{narratorQuiet ? "🔇" : "🎙️"}</span>
+            <strong>{narratorQuiet ? "VOICE ON" : "QUIET"}</strong>
+          </button>
+          <button
+            aria-label={
               littleReader
                 ? "Little Reader mode is on. Show more words."
                 : "More Words mode is on. Switch to Little Reader."
@@ -2619,23 +3438,23 @@ function App() {
                 </h1>
                 <p>
                   <strong>Big feelings. Mega skills.</strong>{" "}
-                  Pick a feeling, run it through the Emotion Machine, and choose
-                  a power-up that changes the ending.
+                  Pick a Pal Mission, pass the tablet, move together, and choose
+                  a safe power-up that changes the ending.
                 </p>
                 <div className="hero-actions">
                   <button
                     className="primary-button jumbo"
-                    onClick={() => go("machine")}
+                    onClick={() => go("missions")}
                     type="button"
                   >
-                    Enter Emotion Machine <span aria-hidden="true">⚙️</span>
+                    Start a Pal Mission <span aria-hidden="true">🚀</span>
                   </button>
                   <button
                     className="secondary-button jumbo"
-                    onClick={() => go("arcade")}
+                    onClick={() => go("machine")}
                     type="button"
                   >
-                    Play in the Vibe Arcade
+                    Try the Emotion Machine
                   </button>
                 </div>
                 <div className="trust-line">
@@ -2768,6 +3587,40 @@ function App() {
           </div>
         )}
 
+        {activeTab === "missions" && (
+          <div className="page missions-page">
+            <section className="page-intro mission-intro">
+              <div>
+                <span className="kicker">PASS • PLAY • MOVE • CHOOSE</span>
+                <h1 tabIndex={-1}>Pal Missions</h1>
+                <p>
+                  Tiny co-op stories for a kid and a safe grown-up. Nobody wins
+                  or loses. Practicing together builds the world.
+                </p>
+              </div>
+              <div className="character-bubble">
+                <span aria-hidden="true">🚀</span>
+                <p>
+                  <strong>Pal Host says:</strong> “Grown-up turn. Kid turn.
+                  Team move. Safe choice. Let’s go!”
+                </p>
+              </div>
+            </section>
+            <PalMissionHub
+              narratorQuiet={narratorQuiet}
+              narratorTone={narratorTone}
+              onComplete={completePalMission}
+              onGrownup={openGrownupPower}
+              onQuietChange={chooseNarratorQuiet}
+              onSelectPal={choosePal}
+              onStyleChange={choosePlayStyle}
+              onToneChange={chooseNarratorTone}
+              playStyle={playStyle}
+              selectedPalId={selectedPalId}
+            />
+          </div>
+        )}
+
         {activeTab === "machine" && (
           <div className="page machine-page">
             <section className="page-intro">
@@ -2790,6 +3643,53 @@ function App() {
                   </p>
                 </div>
               )}
+            </section>
+
+            <section className="pal-story-picker" aria-labelledby="pal-story-title">
+              <div className="section-heading inline-heading">
+                <div>
+                  <span className="kicker">TRY A PAL STORY FIRST</span>
+                  <h2 id="pal-story-title">Whose problem goes in the machine?</h2>
+                </div>
+                <button
+                  aria-pressed={machineStoryId === null}
+                  className="secondary-button"
+                  onClick={() => {
+                    setMachineStoryId(null);
+                    setMachineCycleStep(0);
+                    setPowerUpId(null);
+                    speak("My Feeling mode. Pick the feeling that is closest.");
+                  }}
+                  type="button"
+                >
+                  🌈 MY FEELING
+                </button>
+              </div>
+              <p>
+                Start with a pretend Pal problem. Personal sharing is always
+                optional.
+              </p>
+              <div role="group" aria-label="Choose a fictional Pal story">
+                {PAL_STORIES.map((story) => (
+                  <button
+                    aria-pressed={machineStoryId === story.id}
+                    className={machineStoryId === story.id ? "selected" : ""}
+                    key={story.id}
+                    onClick={() => {
+                      setMachineStoryId(story.id);
+                      setEmotionId(story.emotionId);
+                      setPowerUpId(null);
+                      setMachineCycleStep(0);
+                      speak(`${story.title}. ${story.event}.`);
+                    }}
+                    type="button"
+                  >
+                    <span aria-hidden="true">{story.emoji}</span>
+                    <strong>{story.title}</strong>
+                    <small>PRETEND STORY</small>
+                  </button>
+                ))}
+              </div>
             </section>
 
             <section className="machine-panel">
@@ -2860,7 +3760,9 @@ function App() {
                   {emotion.emoji}
                 </div>
                 <div className="emotion-title-block">
-                  <span>EMOTION SELECTED</span>
+                  <span>
+                    {activeMachineStory ? "PAL STORY FEELING" : "EMOTION SELECTED"}
+                  </span>
                   <h2>{emotion.name}</h2>
                   <p>{emotion.alias}</p>
                 </div>
@@ -3291,11 +4193,15 @@ function App() {
             </section>
 
             <SafeBaseBuilder
+              baseMood={baseMood}
               onGrownup={openGrownupPower}
-              onPlayQuest={() => go("arcade")}
+              onMoodChange={chooseBaseMood}
+              onMoveReward={moveBaseReward}
+              onPlayQuest={() => go("missions")}
               onToggleAdult={toggleSafeAdult}
               onToggleReward={togglePlacedReward}
               placed={placedRewards}
+              positions={rewardPositions}
               safeAdults={safeAdults}
               unlocked={unlockedRewards}
             />

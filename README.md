@@ -45,9 +45,16 @@ can place it immediately or save it for later.
 
 Additional surfaces include:
 
+- five spoken **Pal Missions** with pass-the-tablet grown-up and kid turns;
+- **Play With Me** and **Challenge Me** pathways without age labels;
+- eight camera-free body-movement games and predictable silly surprises;
 - an interactive Emotion Cycle Machine;
+- fictional Pal stories that can enter the Emotion Machine before personal
+  sharing;
 - a picture-led Emotion Glossary, including shame;
 - original skill worlds and characters;
+- a movable, tappable Safe Base with weather, a quiet corner, and safe adults
+  visible by the portal;
 - replaceable Vibe Packs that preserve the stable DBT subtitle;
 - a caregiver co-regulation zone;
 - a globally available **Get a Safe Grown-Up** action.
@@ -61,6 +68,7 @@ Additional surfaces include:
   one-card-at-a-time, spoken nine-step cycle.
 - Hash routes make each app zone bookmarkable and preserve browser Back.
 - Device speech is the current fallback narrator.
+- Calm Voice, Hype Voice, replay, and Quiet controls are available globally.
 - Authorized custom audio can be mapped through `CUSTOM_VOICE_CLIPS` in
   `app/page.tsx`.
 - The shared audio controller stops both custom MP3 playback and device speech.
@@ -90,6 +98,7 @@ State is intentionally device-local:
 - unlocked Safe Base items;
 - placed Safe Base items;
 - selected safe-adult categories.
+- Pal Mission, narrator, and interactive Safe Base preferences.
 
 There is no child account, analytics pipeline, behavioral history, or cloud
 database in this prototype.
@@ -130,6 +139,6 @@ When reviewing this project, focus on:
 
 ## Current phase
 
-Phase A and the July 2026 safety/accessibility audit fixes are implemented.
-Narration scripts should be frozen and clinically reviewed before producing
-the authorized ElevenLabs voice files.
+Phase A, the July 2026 safety/accessibility audit fixes, and the Phase B
+engagement loop are implemented. Narration scripts should be frozen and
+clinically reviewed before producing the authorized ElevenLabs voice files.

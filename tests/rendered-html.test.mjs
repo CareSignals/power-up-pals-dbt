@@ -34,6 +34,7 @@ test("server-renders the Power-Up Pals home experience", async () => {
   assert.match(html, /Big feelings\./);
   assert.match(html, /Mega skills\./);
   assert.match(html, /Emotion Machine/);
+  assert.match(html, /Pal Missions/);
   assert.match(html, /Vibe Arcade/);
   assert.match(html, /Shame/);
   assert.match(html, /Grown-up co-op/);
@@ -85,6 +86,17 @@ test("includes the emotion model, shame support, and every DBT world", async () 
   assert.match(page, /power-up-pals-little-reader/);
   assert.match(page, /DEVICE VOICE: ON/);
   assert.match(page, /CUSTOM_VOICE_CLIPS/);
+  assert.match(page, /PLAY WITH ME/);
+  assert.match(page, /CHALLENGE ME/);
+  assert.match(page, /GROWN-UP TURN/);
+  assert.match(page, /KID TURN/);
+  assert.match(page, /NO CAMERA\. NO SCORE\./);
+  assert.match(page, /No jump scares/);
+  assert.match(page, /TRY A PAL STORY FIRST/);
+  assert.match(page, /Drag unlocked things anywhere/);
+  assert.match(page, /Calm Voice/);
+  assert.match(page, /Hype Voice/);
+  assert.match(page, /power-up-pals-phase-b-settings/);
   assert.match(page, /Big pictures\. Short words\. Spoken help\./);
   assert.match(page, /speechSynthesis/);
   assert.match(page, /Here’s the clue/);
@@ -113,6 +125,7 @@ test("publishes the plain-language privacy route", async () => {
   assert.match(html, /Nothing saved by the app leaves this device/);
   assert.match(html, /does not record, score, report, or transmit/i);
   assert.match(html, /power-up-pals-safe-adults/);
+  assert.match(html, /power-up-pals-phase-b-settings/);
   assert.match(html, /not standalone DBT treatment/i);
 });
 

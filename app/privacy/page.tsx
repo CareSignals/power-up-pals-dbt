@@ -29,6 +29,11 @@ const storedItems = [
     key: "power-up-pals-safe-adults",
     meaning: "the selected safe-adult team labels",
   },
+  {
+    key: "power-up-pals-phase-b-settings",
+    meaning:
+      "Pal, play style, narrator, Safe Base weather, and movable-item positions",
+  },
 ];
 
 export default function PrivacyPage() {
@@ -64,7 +69,7 @@ export default function PrivacyPage() {
       <section>
         <h2>What the browser stores locally</h2>
         <p>
-          Five small browser-storage entries remember preferences and Safe Base
+          Six small browser-storage entries remember preferences and Safe Base
           progress:
         </p>
         <dl className="privacy-storage-list">
@@ -89,8 +94,9 @@ export default function PrivacyPage() {
         <p>
           Use your browser’s settings to clear site data for this website. You
           can also clear browsing data for cookies and site storage. This
-          removes the saved Vibe Pack, reading preference, rewards, Safe Base
-          layout, and safe-adult labels from that browser.
+          removes the saved Vibe Pack, reading preference, rewards, Pal Mission
+          preferences, Safe Base layout, and safe-adult labels from that
+          browser.
         </p>
       </section>
 
