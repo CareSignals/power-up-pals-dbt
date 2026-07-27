@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   ),
   title: "Power-Up Pals: Build Your Chill World",
   description:
-    "A playful, caregiver-supported DBT skills world and Vibe Arcade for children ages 5–7.",
+    "A tablet-first, caregiver-supported DBT-informed play world where children ages 5–7 practice skills and build a personal Safe Base.",
   applicationName: "Power-Up Pals: Build Your Chill World",
   icons: {
     icon: "/icon.png",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Power-Up Pals: Build Your Chill World",
     description:
-      "Pick a feeling, run the emotion cycle, and practice kid-sized DBT games in the Vibe Arcade.",
+      "Practice five kid-sized DBT-informed quests, unlock cozy rewards, and build a personal Safe Base with a caregiver.",
     type: "website",
     images: [
       {
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Power-Up Pals: Build Your Chill World",
     description:
-      "Caregiver-supported emotion skills and playful DBT games for children ages 5–7.",
+      "Caregiver-supported emotion skills, spoken play quests, and a buildable Safe Base for children ages 5–7.",
     images: ["/og-vibe-arcade.png"],
   },
 };

@@ -10,6 +10,8 @@ type Tab =
   | "arcade"
   | "grownup";
 type VibePackId = "genAlpha" | "creature" | "straightUp";
+type CoreQuestId = "checkIn" | "slime" | "freeze" | "both" | "repair";
+type RewardId = "slime" | "blocks" | "pet" | "music" | "costume" | "portal";
 type ArcadeSkillId =
   | "sixSeven"
   | "sigmaStop"
@@ -482,6 +484,168 @@ const WORLDS = [
   },
 ];
 
+const CORE_QUESTS: {
+  id: CoreQuestId;
+  emoji: string;
+  title: string;
+  stable: string;
+  unlocks: RewardId[];
+}[] = [
+  {
+    id: "checkIn",
+    emoji: "🌈",
+    title: "Feelings Check-In",
+    stable: "Notice • Name • Tell",
+    unlocks: ["pet"],
+  },
+  {
+    id: "slime",
+    emoji: "🫧",
+    title: "Slime Goes Slow",
+    stable: "Easy in • Longer out",
+    unlocks: ["slime", "music"],
+  },
+  {
+    id: "freeze",
+    emoji: "🛑",
+    title: "Freeze–Spy–Pick",
+    stable: "Stop • Step back • Look • Choose",
+    unlocks: ["blocks"],
+  },
+  {
+    id: "both",
+    emoji: "↔️",
+    title: "Both Mode",
+    stable: "Two truths can be true",
+    unlocks: ["portal"],
+  },
+  {
+    id: "repair",
+    emoji: "🧰",
+    title: "Respawn and Repair",
+    stable: "Calm • Check • Truth • Fix • Reconnect",
+    unlocks: ["costume"],
+  },
+];
+
+const CORE_DIRECTIONS: Record<CoreQuestId, string> = {
+  checkIn:
+    "Feelings check-in. Tap the face that is closest to how your body feels. A grown-up can help you point and name it.",
+  slime:
+    "Slime goes slow. Easy breath in. Longer, slower breath out. Keep breathing. No holding.",
+  freeze:
+    "Freeze your feet. Back up. Spy the scene. Then pick a safe, kind move or get your grown-up.",
+  both:
+    "Both mode. Say two true things. I can be super mad, and I can use safe hands.",
+  repair:
+    "Respawn and repair. Calm your body. Check for hurt. Tell the truth. Help fix it. Then reconnect.",
+};
+
+const SAFE_BASE_REWARDS: {
+  id: RewardId;
+  emoji: string;
+  name: string;
+  detail: string;
+}[] = [
+  {
+    id: "slime",
+    emoji: "🫧",
+    name: "Slow Slime Pond",
+    detail: "A squishy reminder to slow the out-breath.",
+  },
+  {
+    id: "blocks",
+    emoji: "🧱",
+    name: "Safe Base Blocks",
+    detail: "Build a boundary, doorway, or cozy hideout.",
+  },
+  {
+    id: "pet",
+    emoji: "🐾",
+    name: "Comfort Pet",
+    detail: "A quiet pal who stays close during big feelings.",
+  },
+  {
+    id: "music",
+    emoji: "🎵",
+    name: "DJ Beat Pad",
+    detail: "Play slow rhythms for steady breathing.",
+  },
+  {
+    id: "costume",
+    emoji: "🎩",
+    name: "Silly Costume Closet",
+    detail: "Change hats for a harmless surprise.",
+  },
+  {
+    id: "portal",
+    emoji: "🌀",
+    name: "Both-Mode Portal",
+    detail: "Two different truths can travel together.",
+  },
+];
+
+const CHARACTERS = [
+  {
+    emoji: "🦫",
+    name: "Cappy",
+    role: "Noticing + slowing down",
+    voice:
+      "Cappy here. I can notice one thing at a time without calling it good or bad.",
+  },
+  {
+    emoji: "🦎",
+    name: "Axo",
+    role: "Body resets + trying again",
+    voice:
+      "Axo here. My body gets zoomy, so I wiggle, freeze, and get a grown-up.",
+  },
+  {
+    emoji: "🦄",
+    name: "Glitter",
+    role: "Naming feelings",
+    voice:
+      "Glitter here. My colors change with my feelings. Every color can tell us something.",
+  },
+  {
+    emoji: "🎧",
+    name: "DJ Slime",
+    role: "Breathing rhythms",
+    voice:
+      "DJ Slime here. Easy breath in, sloooower breath out. Let the slime stretch.",
+  },
+  {
+    emoji: "🤖",
+    name: "Both-Bot",
+    role: "Two truths at once",
+    voice:
+      "Both-Bot online. I can feel mad and use safe hands. Beep boop, both are true.",
+  },
+  {
+    emoji: "👾",
+    name: "Alarm Monster",
+    role: "Protection + fact checking",
+    voice:
+      "I am the Alarm Monster. I try to protect you, but sometimes I guess wrong. Let us check.",
+  },
+];
+
+const DBT_SKILL_MAP = [
+  ["Mindfulness", "Capybara Notice Mode", "Find what Cappy can see, hear, feel, and smell without judging it."],
+  ["STOP", "Freeze, Back Up, Spy, Pick!", "Freeze the game, step back, inspect clues, then pick a safe move."],
+  ["Paced breathing", "Slime Goes Slow", "Breathe slowly enough that the animated slime stretches instead of snapping."],
+  ["Distress tolerance", "Axolotl Cool-Down Challenge", "Cool washcloth, slow breathing, wall pushes, or wiggle-and-freeze with a caregiver."],
+  ["Wise Mind", "Head + Heart Team-Up", "Head Bot and Heart Beast combine their information to find the wise move."],
+  ["Check the Facts", "Fact or Brain Trick?", "Sort what happened from what the Alarm Monster is guessing."],
+  ["Opposite Action", "Plot-Twist Move", "Hide → one brave step. Attack → gentle hands and backup."],
+  ["Emotion regulation", "Name It to Tame the Boss", "Identify the feeling and notice what the body is doing."],
+  ["PLEASE", "Charge Your Body Battery", "Check food, water, sleep, movement, medicine, and comfort."],
+  ["Radical acceptance", "The “Yep, It Happened” Power", "“I don’t like it AND it happened. What can I do next?”"],
+  ["Dialectics", "Both Mode", "“I’m mad AND I love you.” “I made a mistake AND I’m not bad.”"],
+  ["DEAR MAN", "Ask Like a Hero", "Say what happened, name the feeling, make a clear ask, and hear the answer."],
+  ["Relationship repair", "Respawn and Repair", "Calm the body, check for hurt, tell the truth, help fix it, and reconnect."],
+] as const;
+
 const ARCADE_SKILLS: {
   id: ArcadeSkillId;
   emoji: string;
@@ -720,7 +884,7 @@ function SixSevenReset({ onComplete }: { onComplete?: () => void }) {
   );
 }
 
-function SlimeBreathing() {
+function SlimeBreathing({ onComplete }: { onComplete?: () => void }) {
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
 
@@ -728,11 +892,12 @@ function SlimeBreathing() {
     if (!running) return;
     if (elapsed >= 30) {
       setRunning(false);
+      onComplete?.();
       return;
     }
     const timer = window.setTimeout(() => setElapsed(elapsed + 1), 1000);
     return () => window.clearTimeout(timer);
-  }, [running, elapsed]);
+  }, [elapsed, onComplete, running]);
 
   const position = elapsed % 10;
   const phase = !running
@@ -753,14 +918,95 @@ function SlimeBreathing() {
       </div>
       <p>Easy breath in. Longer, slower breath out. No holding.</p>
       <button
+        className="listen-button dark-listen"
+        onClick={() =>
+          speak(
+            "Slime goes slow. Easy breath in. Longer, slower breath out. Keep breathing. No holding.",
+          )
+        }
+        type="button"
+      >
+        🔊 Hear the directions
+      </button>
+      <button
         className="primary-button"
         onClick={() => {
           setElapsed(0);
           setRunning(true);
+          speak(
+            "Easy breath in. Now breathe out sloooow. Let the slime stretch.",
+          );
         }}
         type="button"
       >
         {running ? "Restart slime" : "Start 3 slow breaths"}
+      </button>
+    </div>
+  );
+}
+
+function FeelingsCheckIn({
+  emotionId,
+  onComplete,
+  onSelect,
+}: {
+  emotionId: string;
+  onComplete: () => void;
+  onSelect: (id: string) => void;
+}) {
+  const selected =
+    EMOTIONS.find((item) => item.id === emotionId) ?? EMOTIONS[0];
+
+  return (
+    <div className="feelings-checkin">
+      <div className="checkin-voice">
+        <span aria-hidden="true">{selected.emoji}</span>
+        <div>
+          <strong>{selected.name}</strong>
+          <small>{selected.alias}</small>
+        </div>
+        <button
+          aria-label={`Hear about ${selected.name}`}
+          onClick={() =>
+            speak(
+              `${selected.name}. ${selected.alias}. Your body might notice ${selected.body}. This feeling may be telling you: ${selected.message}`,
+            )
+          }
+          type="button"
+        >
+          🔊
+        </button>
+      </div>
+      <p>Tap the face that is closest. A grown-up can help point and name.</p>
+      <div className="checkin-faces" aria-label="Choose a feeling">
+        {EMOTIONS.slice(0, 8).map((item) => (
+          <button
+            aria-label={item.name}
+            aria-pressed={selected.id === item.id}
+            data-color={item.color}
+            key={item.id}
+            onClick={() => {
+              onSelect(item.id);
+              speak(`${item.name}. ${item.alias}.`);
+            }}
+            type="button"
+          >
+            <span aria-hidden="true">{item.emoji}</span>
+            <small>{item.name}</small>
+          </button>
+        ))}
+      </div>
+      <button
+        className="primary-button"
+        onClick={() => {
+          speak(
+            `Thank you for telling me. Your ${selected.name.toLowerCase()} feeling is allowed. We can choose what helps together.`,
+          );
+          onComplete();
+        }}
+        type="button"
+      >
+        🔊 This is my feeling
       </button>
     </div>
   );
@@ -797,6 +1043,28 @@ function SigmaStopChallenge({ onComplete }: { onComplete: () => void }) {
           Real sigma gets backup. Safe and kind beats solo and dominant.
         </div>
       )}
+      <div className="stop-rap">
+        <span>
+          Freeze those feet, back it up,
+          <br />
+          Spy the scene—what is up?
+          <br />
+          Heart is loud, slime goes slow,
+          <br />
+          Pick the safe move—ready, go!
+        </span>
+        <button
+          aria-label="Hear the Freeze Spy Pick rap"
+          onClick={() =>
+            speak(
+              "Freeze those feet, back it up. Spy the scene—what is up? Heart is loud, slime goes slow. Pick the safe move—ready, go!",
+            )
+          }
+          type="button"
+        >
+          🔊
+        </button>
+      </div>
       <button className="primary-button" onClick={advance} type="button">
         {step === 3 ? "Choose the safe move" : "Next move"}
       </button>
@@ -1144,6 +1412,124 @@ function SigmaBothChallenge({ onComplete }: { onComplete: () => void }) {
   );
 }
 
+function SafeBaseBuilder({
+  onGrownup,
+  onToggleAdult,
+  onToggleReward,
+  placed,
+  safeAdults,
+  unlocked,
+}: {
+  onGrownup: () => void;
+  onToggleAdult: (adult: string) => void;
+  onToggleReward: (reward: RewardId) => void;
+  placed: RewardId[];
+  safeAdults: string[];
+  unlocked: RewardId[];
+}) {
+  const adultChoices = ["My grown-up", "Teacher or helper", "Another safe adult"];
+
+  return (
+    <section className="safe-base-builder" aria-labelledby="safe-base-title">
+      <div className="safe-base-copy">
+        <span className="kicker">BUILD YOUR CHILL WORLD</span>
+        <h2 id="safe-base-title">My Safe Base</h2>
+        <p>
+          Practice a Core Quest to unlock cozy world pieces. Tap an unlocked
+          item to put it in—or take it out. No points, ranking, or losing items.
+        </p>
+        <div className="safe-adult-picks">
+          <strong>Who can be on my safe team?</strong>
+          {adultChoices.map((adult) => (
+            <button
+              aria-pressed={safeAdults.includes(adult)}
+              key={adult}
+              onClick={() => onToggleAdult(adult)}
+              type="button"
+            >
+              {safeAdults.includes(adult) ? "🛡️" : "＋"} {adult}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="safe-base-world">
+        <div className="base-sky" aria-hidden="true">
+          <span>☁️</span>
+          <span>⭐</span>
+          <span>☁️</span>
+        </div>
+        <div className="placed-rewards">
+          {placed.length ? (
+            placed.map((rewardId, index) => {
+              const reward = SAFE_BASE_REWARDS.find(
+                (item) => item.id === rewardId,
+              );
+              if (!reward) return null;
+              return (
+                <button
+                  aria-label={`Remove ${reward.name} from my Safe Base`}
+                  className={`placed-item placed-${index + 1}`}
+                  key={reward.id}
+                  onClick={() => onToggleReward(reward.id)}
+                  type="button"
+                >
+                  <span aria-hidden="true">{reward.emoji}</span>
+                  <small>{reward.name}</small>
+                </button>
+              );
+            })
+          ) : (
+            <div className="empty-base">
+              <span aria-hidden="true">🏝️</span>
+              <strong>Your base is ready to build.</strong>
+              <small>Complete a Core Quest, then place the reward here.</small>
+            </div>
+          )}
+        </div>
+        <button
+          className="base-grownup-button"
+          onClick={onGrownup}
+          type="button"
+        >
+          🤝 GET MY GROWN-UP POWER-UP
+        </button>
+      </div>
+
+      <div className="reward-shelf">
+        {SAFE_BASE_REWARDS.map((reward) => {
+          const isUnlocked = unlocked.includes(reward.id);
+          const isPlaced = placed.includes(reward.id);
+          return (
+            <button
+              aria-label={
+                isUnlocked
+                  ? `${isPlaced ? "Remove" : "Add"} ${reward.name}`
+                  : `${reward.name} is locked`
+              }
+              aria-pressed={isPlaced}
+              disabled={!isUnlocked}
+              key={reward.id}
+              onClick={() => onToggleReward(reward.id)}
+              type="button"
+            >
+              <span aria-hidden="true">{isUnlocked ? reward.emoji : "🔒"}</span>
+              <strong>{reward.name}</strong>
+              <small>
+                {isUnlocked
+                  ? isPlaced
+                    ? "In my base"
+                    : reward.detail
+                  : "Practice a Core Quest to unlock"}
+              </small>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("home");
   const [emotionId, setEmotionId] = useState("angry");
@@ -1158,6 +1544,11 @@ function App() {
   const [vibePack, setVibePack] = useState<VibePackId>("genAlpha");
   const [arcadeSkillId, setArcadeSkillId] =
     useState<ArcadeSkillId>("sixSeven");
+  const [coreQuestId, setCoreQuestId] = useState<CoreQuestId>("checkIn");
+  const [unlockedRewards, setUnlockedRewards] = useState<RewardId[]>([]);
+  const [placedRewards, setPlacedRewards] = useState<RewardId[]>([]);
+  const [safeAdults, setSafeAdults] = useState<string[]>(["My grown-up"]);
+  const [grownupPowerOpen, setGrownupPowerOpen] = useState(false);
 
   const emotion =
     EMOTIONS.find((item) => item.id === emotionId) ?? EMOTIONS[0];
@@ -1173,12 +1564,31 @@ function App() {
   }, [glossaryQuery]);
   const arcadeSkill =
     ARCADE_SKILLS.find((item) => item.id === arcadeSkillId) ?? ARCADE_SKILLS[0];
+  const coreQuest =
+    CORE_QUESTS.find((item) => item.id === coreQuestId) ?? CORE_QUESTS[0];
   const activeVibePack = VIBE_PACKS[vibePack];
 
   useEffect(() => {
     const saved = window.localStorage.getItem("power-up-pals-vibe-pack");
     if (saved === "genAlpha" || saved === "creature" || saved === "straightUp") {
       setVibePack(saved);
+    }
+    try {
+      const unlocked = JSON.parse(
+        window.localStorage.getItem("power-up-pals-unlocked-rewards") ?? "[]",
+      );
+      const placed = JSON.parse(
+        window.localStorage.getItem("power-up-pals-placed-rewards") ?? "[]",
+      );
+      const adults = JSON.parse(
+        window.localStorage.getItem("power-up-pals-safe-adults") ??
+          '["My grown-up"]',
+      );
+      if (Array.isArray(unlocked)) setUnlockedRewards(unlocked);
+      if (Array.isArray(placed)) setPlacedRewards(placed);
+      if (Array.isArray(adults)) setSafeAdults(adults);
+    } catch {
+      // Keep the friendly defaults if old device data cannot be read.
     }
   }, []);
 
@@ -1204,6 +1614,54 @@ function App() {
   const restoreAura = useCallback(() => {
     setAuraRestored(true);
   }, []);
+
+  const completeCoreQuest = useCallback((id: CoreQuestId) => {
+    const quest = CORE_QUESTS.find((item) => item.id === id);
+    if (!quest) return;
+    setAuraRestored(true);
+    setUnlockedRewards((current) => {
+      const next = Array.from(new Set([...current, ...quest.unlocks]));
+      window.localStorage.setItem(
+        "power-up-pals-unlocked-rewards",
+        JSON.stringify(next),
+      );
+      return next;
+    });
+  }, []);
+
+  const togglePlacedReward = (reward: RewardId) => {
+    if (!unlockedRewards.includes(reward)) return;
+    setPlacedRewards((current) => {
+      const next = current.includes(reward)
+        ? current.filter((item) => item !== reward)
+        : [...current, reward];
+      window.localStorage.setItem(
+        "power-up-pals-placed-rewards",
+        JSON.stringify(next),
+      );
+      return next;
+    });
+  };
+
+  const toggleSafeAdult = (adult: string) => {
+    setSafeAdults((current) => {
+      const next = current.includes(adult)
+        ? current.filter((item) => item !== adult)
+        : [...current, adult];
+      window.localStorage.setItem(
+        "power-up-pals-safe-adults",
+        JSON.stringify(next),
+      );
+      return next;
+    });
+  };
+
+  const openGrownupPower = () => {
+    setGrownupPowerOpen(true);
+    speak(
+      "Grown-up power-up. Connect first. Your body is having a huge alarm. I am here with you. We will solve it when your body is ready.",
+    );
+  };
 
   const chooseVibePack = (id: VibePackId) => {
     setVibePack(id);
@@ -1447,6 +1905,29 @@ function App() {
               </article>
             </section>
 
+            <section className="safe-base-teaser">
+              <div>
+                <span className="kicker">PRACTICE → UNLOCK → BUILD</span>
+                <h2>Your skills build a personal Safe Base.</h2>
+                <p>
+                  Unlock slime, blocks, pets, music, costumes, and portals—then
+                  arrange a cozy world with a chosen safe-adult team.
+                </p>
+                <button
+                  className="primary-button"
+                  onClick={() => go("worlds")}
+                  type="button"
+                >
+                  Build my Safe Base
+                </button>
+              </div>
+              <div className="teaser-rewards" aria-hidden="true">
+                {SAFE_BASE_REWARDS.map((reward) => (
+                  <span key={reward.id}>{reward.emoji}</span>
+                ))}
+              </div>
+            </section>
+
             <section className="grownup-banner">
               <div className="grownup-avatar" aria-hidden="true">
                 🤝
@@ -1639,7 +2120,7 @@ function App() {
                     ✨
                   </span>
                   <div>
-                    <span>AURA GLOW EARNED</span>
+                    <span>AURA RESTORED</span>
                     <h3>{powerUp.cheer}</h3>
                     <p>
                       Replay the machine with another skill to compare the
@@ -1663,6 +2144,7 @@ function App() {
                 </div>
               )}
             </section>
+
           </div>
         )}
 
@@ -1787,11 +2269,11 @@ function App() {
           <div className="page worlds-page">
             <section className="page-intro">
               <div>
-                <span className="kicker">DBT WORLD MAP</span>
-                <h1>Five worlds. Mega skills.</h1>
+                <span className="kicker">MY WORLD + DBT WORLD MAP</span>
+                <h1>Build a Safe Base.</h1>
                 <p>
-                  Each world uses a real DBT module with kid-sized language,
-                  movement, play, and co-op practice.
+                  Practice a core skill, unlock a cozy piece, and build a
+                  personal world around calming items and safe people.
                 </p>
               </div>
               <div className="character-bubble">
@@ -1800,6 +2282,40 @@ function App() {
                   <strong>DJ Slime says:</strong> “Skills work best when you
                   practice before chaos mode.”
                 </p>
+              </div>
+            </section>
+
+            <SafeBaseBuilder
+              onGrownup={openGrownupPower}
+              onToggleAdult={toggleSafeAdult}
+              onToggleReward={togglePlacedReward}
+              placed={placedRewards}
+              safeAdults={safeAdults}
+              unlocked={unlockedRewards}
+            />
+
+            <section className="pal-roster" aria-labelledby="pal-roster-title">
+              <div className="section-heading inline-heading">
+                <div>
+                  <span className="kicker">ORIGINAL POWER-UP PALS</span>
+                  <h2 id="pal-roster-title">Tap a pal to hear their power</h2>
+                </div>
+                <p>Every character helps. Even the Alarm Monster.</p>
+              </div>
+              <div className="pal-cards">
+                {CHARACTERS.map((character) => (
+                  <button
+                    aria-label={`Hear ${character.name}`}
+                    key={character.name}
+                    onClick={() => speak(character.voice)}
+                    type="button"
+                  >
+                    <span aria-hidden="true">{character.emoji}</span>
+                    <strong>{character.name}</strong>
+                    <small>{character.role}</small>
+                    <i aria-hidden="true">🔊</i>
+                  </button>
+                ))}
               </div>
             </section>
 
@@ -1958,6 +2474,29 @@ function App() {
                   ),
               )}
             </section>
+
+            <section className="silly-surprise-rules">
+              <div>
+                <span className="kicker">CHALLENGE MODE</span>
+                <h2>Goofy surprises stay inside the world.</h2>
+                <p>
+                  Make Cappy laugh, survive a slime storm, or rescue Axo from
+                  Volcano Mode. The surprise is silly—not scary or shaming.
+                </p>
+              </div>
+              <div
+                className="surprise-chips"
+                aria-label="Safe in-world surprises"
+              >
+                <span>🎩 Changing hats</span>
+                <span>🤧 Slime sneezes</span>
+                <span>🎉 Confetti traps</span>
+              </div>
+              <div className="surprise-no">
+                <strong>Never:</strong> humiliating, destructive, filmed, or
+                deceptive real-world pranks.
+              </div>
+            </section>
           </div>
         )}
 
@@ -1976,9 +2515,100 @@ function App() {
               <div className="character-bubble">
                 <span aria-hidden="true">🦎</span>
                 <p>
-                  <strong>Axel says:</strong> “We joke with the skill—never with
+                  <strong>Axo says:</strong> “We joke with the skill—never with
                   the feeling or the kid.”
                 </p>
+              </div>
+            </section>
+
+            <section className="core-quest-dock" aria-labelledby="core-quest-title">
+              <div className="core-quest-heading">
+                <div>
+                  <span className="kicker">THE POLISHED CORE FIVE</span>
+                  <h2 id="core-quest-title">Pick a shared quest</h2>
+                  <p>
+                    Built for a child and caregiver to tap, hear, move, and
+                    practice together on a tablet or phone.
+                  </p>
+                </div>
+                <button
+                  className="listen-button"
+                  onClick={() => speak(CORE_DIRECTIONS[coreQuest.id])}
+                  type="button"
+                >
+                  🔊 Hear this quest
+                </button>
+              </div>
+
+              <div className="core-quest-tabs" role="tablist" aria-label="Core quests">
+                {CORE_QUESTS.map((quest) => (
+                  <button
+                    aria-selected={coreQuest.id === quest.id}
+                    className={coreQuest.id === quest.id ? "selected" : ""}
+                    key={quest.id}
+                    onClick={() => setCoreQuestId(quest.id)}
+                    role="tab"
+                    type="button"
+                  >
+                    <span aria-hidden="true">{quest.emoji}</span>
+                    <strong>{quest.title}</strong>
+                    <small>{quest.stable}</small>
+                  </button>
+                ))}
+              </div>
+
+              <div className="core-quest-play" role="tabpanel">
+                <header>
+                  <div>
+                    <span>CORE QUEST</span>
+                    <h3>{coreQuest.title}</h3>
+                    <p>{coreQuest.stable}</p>
+                  </div>
+                  <div className="unlock-preview">
+                    <small>PRACTICE UNLOCKS</small>
+                    <span>
+                      {coreQuest.unlocks
+                        .map(
+                          (rewardId) =>
+                            SAFE_BASE_REWARDS.find(
+                              (reward) => reward.id === rewardId,
+                            )?.emoji,
+                        )
+                        .join(" ")}
+                    </span>
+                  </div>
+                </header>
+                <div className="core-quest-stage">
+                  {coreQuest.id === "checkIn" && (
+                    <FeelingsCheckIn
+                      emotionId={emotionId}
+                      onComplete={() => completeCoreQuest("checkIn")}
+                      onSelect={(id) => selectEmotion(id)}
+                    />
+                  )}
+                  {coreQuest.id === "slime" && (
+                    <div className="core-slime-stage">
+                      <SlimeBreathing
+                        onComplete={() => completeCoreQuest("slime")}
+                      />
+                    </div>
+                  )}
+                  {coreQuest.id === "freeze" && (
+                    <SigmaStopChallenge
+                      onComplete={() => completeCoreQuest("freeze")}
+                    />
+                  )}
+                  {coreQuest.id === "both" && (
+                    <SigmaBothChallenge
+                      onComplete={() => completeCoreQuest("both")}
+                    />
+                  )}
+                  {coreQuest.id === "repair" && (
+                    <RepairQuest
+                      onComplete={() => completeCoreQuest("repair")}
+                    />
+                  )}
+                </div>
               </div>
             </section>
 
@@ -2174,6 +2804,54 @@ function App() {
               </article>
             </section>
 
+            <section className="development-rule">
+              <div className="development-rule-icon" aria-hidden="true">
+                🫶
+              </div>
+              <div>
+                <span className="kicker">DEVELOPMENTAL RULE</span>
+                <h2>Practice while calm. Borrow calm when it’s hard.</h2>
+                <p>
+                  Neither child is expected to independently open an app and
+                  regulate during a full meltdown. The child and caregiver
+                  rehearse through play, then the caregiver joins the hard
+                  moment with connection, safety, and very few words.
+                </p>
+              </div>
+              <button
+                className="primary-button jumbo"
+                onClick={openGrownupPower}
+                type="button"
+              >
+                🤝 Get My Grown-Up Power-Up
+              </button>
+            </section>
+
+            <section className="dbt-skin-map" aria-labelledby="dbt-map-title">
+              <div className="section-heading">
+                <span className="kicker">GEN ALPHA SKIN • AUTHENTIC DBT</span>
+                <h2 id="dbt-map-title">What every kid-world skill means</h2>
+                <p>
+                  The playful name can change. The DBT target and caregiver
+                  explanation stay visible.
+                </p>
+              </div>
+              <div className="dbt-map-table" role="table" aria-label="DBT skill map">
+                <div className="dbt-map-row dbt-map-head" role="row">
+                  <span role="columnheader">Real DBT skill</span>
+                  <span role="columnheader">Child-facing version</span>
+                  <span role="columnheader">Play idea</span>
+                </div>
+                {DBT_SKILL_MAP.map(([skill, kidName, game]) => (
+                  <div className="dbt-map-row" key={skill} role="row">
+                    <strong role="cell">{skill}</strong>
+                    <span role="cell">{kidName}</span>
+                    <p role="cell">{game}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
             <section className="shame-guide">
               <div className="shame-guide-icon" aria-hidden="true">
                 🫥
@@ -2223,18 +2901,124 @@ function App() {
               </div>
             </section>
 
+            <section className="original-world-note">
+              <span aria-hidden="true">🌟</span>
+              <div>
+                <span className="kicker">ORIGINAL-WORLD PROMISE</span>
+                <h2>Familiar kinds of fun, entirely original characters.</h2>
+                <p>
+                  Power-Up Pals can borrow the appeal of block building,
+                  superheroes, platform worlds, challenge videos, and musical
+                  fantasy without using protected characters, creator
+                  likenesses, logos, or branded game artwork.
+                </p>
+              </div>
+            </section>
+
             <footer className="care-note">
-              <strong>Prototype care note</strong>
-              <p>
-                This version teaches DBT-informed skills and caregiver
-                co-regulation. Content for children ages 5–7 should be reviewed
-                with a trauma-informed child clinician before clinical or
-                commercial use.
-              </p>
+              <div>
+                <strong>Prototype care note</strong>
+                <p>
+                  For a five-year-old, describe this as DBT-informed play and
+                  co-regulation—not standalone DBT treatment. Content for ages
+                  5–7 should be reviewed with a trauma-informed child clinician
+                  before clinical or commercial use.
+                </p>
+              </div>
+              <div className="care-sources">
+                <strong>Why caregiver co-play leads</strong>
+                <p>
+                  NCTSN’s Parent-Child Care model serves children ages 1–10 and
+                  coaches caregivers while they play with the child. A 2017
+                  randomized DBT-C trial studied children ages 7–12 with DMDD.
+                </p>
+                <a
+                  href="https://www.nctsn.org/interventions/parent-child-care"
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  NCTSN Parent-Child Care ↗
+                </a>
+                <a
+                  href="https://pubmed.ncbi.nlm.nih.gov/28942805/"
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  DBT-C randomized trial ↗
+                </a>
+              </div>
             </footer>
           </div>
         )}
       </main>
+
+      <button
+        className="grownup-power-fab"
+        onClick={openGrownupPower}
+        type="button"
+      >
+        <span aria-hidden="true">🤝</span>
+        <span>
+          <strong>GET MY GROWN-UP</strong>
+          <small>Power-up</small>
+        </span>
+      </button>
+
+      {grownupPowerOpen && (
+        <div className="grownup-power-overlay" role="presentation">
+          <section
+            aria-labelledby="grownup-power-title"
+            aria-modal="true"
+            className="grownup-power-dialog"
+            role="dialog"
+          >
+            <button
+              aria-label="Close grown-up power-up"
+              className="dialog-close"
+              onClick={() => setGrownupPowerOpen(false)}
+              type="button"
+            >
+              ×
+            </button>
+            <span className="grownup-power-hands" aria-hidden="true">
+              🤝
+            </span>
+            <span className="kicker">CONNECT FIRST</span>
+            <h2 id="grownup-power-title">A safe grown-up joins this level.</h2>
+            <blockquote>
+              “Your body is having a huge alarm. I’m here with you. We’ll solve
+              it when your body is ready.”
+            </blockquote>
+            <div className="grownup-power-actions">
+              <button
+                className="primary-button jumbo"
+                onClick={() =>
+                  speak(
+                    "Your body is having a huge alarm. I am here with you. We will solve it when your body is ready.",
+                  )
+                }
+                type="button"
+              >
+                🔊 Hear the connection script
+              </button>
+              <button
+                className="secondary-button jumbo"
+                onClick={() => {
+                  setGrownupPowerOpen(false);
+                  go("grownup");
+                }}
+                type="button"
+              >
+                Open grown-up co-op
+              </button>
+            </div>
+            <p>
+              No explaining is required right now. Stay close, keep bodies safe,
+              and choose a practiced skill only when the child is ready.
+            </p>
+          </section>
+        </div>
+      )}
 
       <nav className="mobile-nav" aria-label="Mobile navigation">
         {NAV.map((item) => (
