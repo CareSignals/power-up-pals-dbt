@@ -1,8 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-type Tab = "home" | "machine" | "glossary" | "worlds" | "grownup";
+type Tab =
+  | "home"
+  | "machine"
+  | "glossary"
+  | "worlds"
+  | "arcade"
+  | "grownup";
+type VibePackId = "genAlpha" | "creature" | "straightUp";
+type ArcadeSkillId =
+  | "sixSeven"
+  | "sigmaStop"
+  | "noCapFacts"
+  | "susOrFacts"
+  | "auraRecharge"
+  | "bigWRepair"
+  | "brainrotBoss"
+  | "chaosChill"
+  | "sigmaBoth";
 type PowerUpId =
   | "sigmaStop"
   | "noCapFacts"
@@ -465,11 +482,143 @@ const WORLDS = [
   },
 ];
 
+const ARCADE_SKILLS: {
+  id: ArcadeSkillId;
+  emoji: string;
+  stable: string;
+  dbt: string;
+  blurb: string;
+}[] = [
+  {
+    id: "sixSeven",
+    emoji: "6️⃣",
+    stable: "Wiggle • Still • Notice",
+    dbt: "Mindfulness + STOP",
+    blurb: "A grown-up-and-kid call-and-response reset for busy bodies.",
+  },
+  {
+    id: "sigmaStop",
+    emoji: "🛑",
+    stable: "Freeze • Back up • Look • Choose",
+    dbt: "STOP",
+    blurb: "Make room between the giant feeling and the next move.",
+  },
+  {
+    id: "noCapFacts",
+    emoji: "🔎",
+    stable: "See • Guess • Check",
+    dbt: "Check the Facts",
+    blurb: "Separate what happened from what the Alarm Monster predicts.",
+  },
+  {
+    id: "susOrFacts",
+    emoji: "🕵️",
+    stable: "Sort facts from brain guesses",
+    dbt: "Check the Facts",
+    blurb: "A two-button detective game with no trick answers.",
+  },
+  {
+    id: "auraRecharge",
+    emoji: "✨",
+    stable: "Care for the body • Get connection",
+    dbt: "PLEASE + Co-regulation",
+    blurb: "Check body needs before asking the brain to do a hard thing.",
+  },
+  {
+    id: "bigWRepair",
+    emoji: "🧰",
+    stable: "Truth • Check • Fix • Reconnect",
+    dbt: "Repair + Problem Solving",
+    blurb: "A mistake is something to repair—not a kid identity.",
+  },
+  {
+    id: "brainrotBoss",
+    emoji: "🎧",
+    stable: "Breathe • Ground • Choose",
+    dbt: "Distress Tolerance",
+    blurb: "Regulate while DJ Slime drops a ridiculous original rap.",
+  },
+  {
+    id: "chaosChill",
+    emoji: "🌪️",
+    stable: "Name the body state",
+    dbt: "Mindfulness of current emotion",
+    blurb: "Name the nervous-system weather without calling the child bad.",
+  },
+  {
+    id: "sigmaBoth",
+    emoji: "↔️",
+    stable: "Two truths can be true",
+    dbt: "Walking the Middle Path",
+    blurb: "Hold a big feeling and a safe choice at the same time.",
+  },
+];
+
+const VIBE_PACKS: Record<
+  VibePackId,
+  {
+    name: string;
+    emoji: string;
+    note: string;
+    labels: Record<ArcadeSkillId, string>;
+  }
+> = {
+  genAlpha: {
+    name: "Gen Alpha Pack",
+    emoji: "⚡",
+    note: "6–7, sigma, aura, sus, and no-cap words.",
+    labels: {
+      sixSeven: "6–7 Reset",
+      sigmaStop: "Sigma STOP",
+      noCapFacts: "No-Cap Facts",
+      susOrFacts: "Sus or Facts?",
+      auraRecharge: "Aura Recharge",
+      bigWRepair: "Big W Repair",
+      brainrotBoss: "Brainrot Boss Battle",
+      chaosChill: "Chaos Mode → Chill Mode",
+      sigmaBoth: "Sigma Both Mode",
+    },
+  },
+  creature: {
+    name: "Creature Pack",
+    emoji: "🦫",
+    note: "Capybaras, axolotls, unicorns, and slime.",
+    labels: {
+      sixSeven: "Axolotl Wiggle Reset",
+      sigmaStop: "Capybara Pause",
+      noCapFacts: "Unicorn Fact Beam",
+      susOrFacts: "Axolotl Detective",
+      auraRecharge: "Creature Care Check",
+      bigWRepair: "Capy Fix-It Quest",
+      brainrotBoss: "DJ Slime Boss Battle",
+      chaosChill: "Slime Storm → Soft Slime",
+      sigmaBoth: "Unicorn AND Portal",
+    },
+  },
+  straightUp: {
+    name: "Straight-Up Pack",
+    emoji: "💬",
+    note: "Simple skill names with no slang.",
+    labels: {
+      sixSeven: "Wiggle + Notice Reset",
+      sigmaStop: "Stop and Choose",
+      noCapFacts: "What Happened?",
+      susOrFacts: "Fact or Guess?",
+      auraRecharge: "Body Needs Check",
+      bigWRepair: "Make It Right",
+      brainrotBoss: "Breathing Challenge",
+      chaosChill: "Fast Body → Settled Body",
+      sigmaBoth: "Both Can Be True",
+    },
+  },
+};
+
 const NAV: { id: Tab; label: string; emoji: string }[] = [
   { id: "home", label: "Home", emoji: "🏝️" },
   { id: "machine", label: "Emotion Machine", emoji: "⚙️" },
   { id: "glossary", label: "Feelings", emoji: "📖" },
   { id: "worlds", label: "Skill Worlds", emoji: "🌀" },
+  { id: "arcade", label: "Vibe Arcade", emoji: "🕹️" },
   { id: "grownup", label: "Grown-up Co-op", emoji: "🤝" },
 ];
 
@@ -482,10 +631,10 @@ function speak(text: string) {
   window.speechSynthesis.speak(utterance);
 }
 
-function SixSevenReset() {
-  const [phase, setPhase] = useState<"ready" | "wiggle" | "freeze" | "done">(
-    "ready",
-  );
+function SixSevenReset({ onComplete }: { onComplete?: () => void }) {
+  const [phase, setPhase] = useState<
+    "ready" | "call" | "wiggle" | "freeze" | "done"
+  >("ready");
   const [seconds, setSeconds] = useState(6);
 
   useEffect(() => {
@@ -498,12 +647,13 @@ function SixSevenReset() {
         setSeconds(7);
       } else {
         setPhase("done");
+        onComplete?.();
       }
     }, 1000);
     return () => window.clearTimeout(timer);
-  }, [phase, seconds]);
+  }, [onComplete, phase, seconds]);
 
-  const start = () => {
+  const answer = () => {
     setPhase("wiggle");
     setSeconds(6);
   };
@@ -514,13 +664,17 @@ function SixSevenReset() {
         <span className="challenge-number">
           {phase === "ready"
             ? "6–7"
+            : phase === "call"
+              ? "6!"
             : phase === "done"
               ? "W!"
               : seconds}
         </span>
         <span>
           {phase === "ready"
-            ? "Ready?"
+            ? "GROWN-UP + KID"
+            : phase === "call"
+              ? "KID SAYS: SEVEN!"
             : phase === "wiggle"
               ? "WIGGLE!"
               : phase === "freeze"
@@ -530,16 +684,38 @@ function SixSevenReset() {
       </div>
       <p>
         {phase === "ready"
-          ? "Six seconds of silly wiggles. Seven seconds frozen while you notice your body."
+          ? "Grown-up says “Six!” Kid answers “Seven!” Then wiggle for six and get still for seven."
+          : phase === "call"
+            ? "Child says “Seven!” Both players freeze for one beat, then start the reset."
           : phase === "done"
             ? "What changed in your body—fast, slow, hot, cold, tight, or loose?"
             : phase === "wiggle"
               ? "Shake out the buzz—safe body, safe space."
               : "Feet still. Hands safe. Spy one thing you see and one thing you feel."}
       </p>
-      <button className="primary-button" onClick={start} type="button">
-        {phase === "ready" ? "Start 6–7" : "Do it again"}
-      </button>
+      {phase === "ready" && (
+        <button
+          className="primary-button"
+          onClick={() => setPhase("call")}
+          type="button"
+        >
+          Grown-up says “Six!”
+        </button>
+      )}
+      {phase === "call" && (
+        <button className="primary-button" onClick={answer} type="button">
+          Kid answers “Seven!”
+        </button>
+      )}
+      {phase === "done" && (
+        <button
+          className="primary-button"
+          onClick={() => setPhase("ready")}
+          type="button"
+        >
+          Do it again
+        </button>
+      )}
     </div>
   );
 }
@@ -590,17 +766,398 @@ function SlimeBreathing() {
   );
 }
 
+function SigmaStopChallenge({ onComplete }: { onComplete: () => void }) {
+  const steps = [
+    ["FREEZE", "Stop your body. Safe hands and feet."],
+    ["BACK UP", "Take one step or one breath of space."],
+    ["SPY THE SCENE", "What is happening? What is your brain guessing?"],
+    ["PICK THE MOVE", "Get space, use words, or call your grown-up."],
+  ];
+  const [step, setStep] = useState(0);
+
+  const advance = () => {
+    if (step === steps.length - 1) {
+      onComplete();
+      setStep(0);
+      return;
+    }
+    setStep((current) => current + 1);
+  };
+
+  return (
+    <div className="stop-challenge">
+      <div className="stop-sign" aria-hidden="true">
+        {step + 1}
+      </div>
+      <span className="activity-kicker">STEP {step + 1} OF 4</span>
+      <h3>{steps[step][0]}</h3>
+      <p>{steps[step][1]}</p>
+      {step === 3 && (
+        <div className="backup-truth">
+          Real sigma gets backup. Safe and kind beats solo and dominant.
+        </div>
+      )}
+      <button className="primary-button" onClick={advance} type="button">
+        {step === 3 ? "Choose the safe move" : "Next move"}
+      </button>
+    </div>
+  );
+}
+
+function NoCapFactsChallenge({ onComplete }: { onComplete: () => void }) {
+  return (
+    <div className="alarm-screen">
+      <div className="alarm-monster" aria-hidden="true">
+        👾
+      </div>
+      <span className="activity-kicker">ALARM MONSTER CHECK</span>
+      <h3>BRO, THE ALARM MONSTER IS BEING SUS</h3>
+      <p className="alarm-question">
+        Is this a real danger, a brain guess, or a little of both?
+      </p>
+      <div className="fact-prompts">
+        <div>
+          <span>👀 NO-CAP FACTS</span>
+          <p>What did your eyes see and your ears hear?</p>
+        </div>
+        <div>
+          <span>🧠 BRAIN GUESS</span>
+          <p>What are you worried might happen?</p>
+        </div>
+        <div>
+          <span>🛡️ SAFE MOVE</span>
+          <p>Get space, use words, or call your grown-up.</p>
+        </div>
+      </div>
+      <button
+        className="primary-button"
+        onClick={() => {
+          speak(
+            "No-cap facts. What did your eyes see? Brain guess. What are you worried might happen? Safe move. Get space, use words, or call your grown-up.",
+          );
+          onComplete();
+        }}
+        type="button"
+      >
+        🔊 Hear the fact check
+      </button>
+    </div>
+  );
+}
+
+const DETECTIVE_CARDS = [
+  {
+    text: "The grown-up walked into the kitchen.",
+    answer: "fact",
+    why: "That is something eyes could see.",
+  },
+  {
+    text: "They are leaving forever.",
+    answer: "guess",
+    why: "That is the Alarm Monster predicting the future.",
+  },
+  {
+    text: "My friend said, “I want a turn.”",
+    answer: "fact",
+    why: "That is something ears could hear.",
+  },
+  {
+    text: "Nobody will ever play with me.",
+    answer: "guess",
+    why: "That is a giant brain guess—not a forever fact.",
+  },
+] as const;
+
+function SusOrFactsGame({ onComplete }: { onComplete: () => void }) {
+  const [card, setCard] = useState(0);
+  const [choice, setChoice] = useState<"fact" | "guess" | null>(null);
+  const current = DETECTIVE_CARDS[card];
+  const correct = choice === current.answer;
+
+  const next = () => {
+    if (card === DETECTIVE_CARDS.length - 1) {
+      onComplete();
+      setCard(0);
+    } else {
+      setCard((value) => value + 1);
+    }
+    setChoice(null);
+  };
+
+  return (
+    <div className="detective-game">
+      <div className="detective-progress" aria-label={`Card ${card + 1} of 4`}>
+        {DETECTIVE_CARDS.map((item, index) => (
+          <span className={index <= card ? "seen" : ""} key={item.text} />
+        ))}
+      </div>
+      <span className="activity-kicker">DETECTIVE CARD {card + 1}</span>
+      <h3>“{current.text}”</h3>
+      <p>Is it something we can see or hear—or a brain guess?</p>
+      <div className="sort-buttons">
+        <button
+          aria-pressed={choice === "fact"}
+          onClick={() => setChoice("fact")}
+          type="button"
+        >
+          👀 No-cap fact
+        </button>
+        <button
+          aria-pressed={choice === "guess"}
+          onClick={() => setChoice("guess")}
+          type="button"
+        >
+          🧠 Brain guess
+        </button>
+      </div>
+      {choice && (
+        <div
+          className={correct ? "detective-feedback correct" : "detective-feedback"}
+          role="status"
+        >
+          <strong>{correct ? "Detective check! " : "Good try—look again. "}</strong>
+          {correct ? current.why : "Can eyes see it or ears hear it?"}
+        </div>
+      )}
+      {correct && (
+        <button className="primary-button" onClick={next} type="button">
+          {card === DETECTIVE_CARDS.length - 1
+            ? "Finish the case"
+            : "Next detective card"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function AuraRecharge({ onComplete }: { onComplete: () => void }) {
+  const needs = [
+    ["💧", "Water"],
+    ["🍓", "Snack"],
+    ["😴", "Sleep or rest"],
+    ["🕺", "Movement"],
+    ["🧸", "Comfort"],
+    ["💊", "Medicine with my grown-up"],
+    ["🤝", "Connection"],
+  ];
+  const [selected, setSelected] = useState<string[]>([]);
+
+  const toggle = (need: string) => {
+    setSelected((current) =>
+      current.includes(need)
+        ? current.filter((item) => item !== need)
+        : [...current, need],
+    );
+  };
+
+  return (
+    <div className="aura-recharge">
+      <div className={selected.length ? "aura-core restored" : "aura-core"}>
+        <span aria-hidden="true">✨</span>
+        <strong>{selected.length ? "AURA RESTORED" : "BODY CHECK"}</strong>
+      </div>
+      <p>What might help your body feel safer or steadier right now?</p>
+      <div className="need-grid">
+        {needs.map(([emoji, need]) => (
+          <button
+            aria-pressed={selected.includes(need)}
+            key={need}
+            onClick={() => toggle(need)}
+            type="button"
+          >
+            <span aria-hidden="true">{emoji}</span>
+            {need}
+          </button>
+        ))}
+      </div>
+      <button
+        className="primary-button"
+        disabled={!selected.length}
+        onClick={onComplete}
+        type="button"
+      >
+        Ask my grown-up for this
+      </button>
+      <small>No score. No streak. Noticing a need is the win.</small>
+    </div>
+  );
+}
+
+function RepairQuest({ onComplete }: { onComplete: () => void }) {
+  const steps = [
+    ["Tell the truth", "Say what happened with short, honest words."],
+    ["Check for hurt", "Ask, “Is anyone or anything hurt?”"],
+    ["Help fix it", "Clean, replace, try again, or get grown-up help."],
+    ["Reconnect", "When everyone is ready, return to safe ordinary play."],
+  ];
+  const [done, setDone] = useState<number[]>([]);
+
+  const toggle = (index: number) => {
+    setDone((current) =>
+      current.includes(index)
+        ? current.filter((item) => item !== index)
+        : [...current, index],
+    );
+  };
+
+  return (
+    <div className="repair-quest">
+      <div className="repair-banner">
+        <span aria-hidden="true">🧰</span>
+        <div>
+          <strong>Mistake ≠ bad kid</strong>
+          <small>Truth and repair help trust regrow.</small>
+        </div>
+      </div>
+      <div className="repair-steps">
+        {steps.map(([title, detail], index) => (
+          <button
+            aria-pressed={done.includes(index)}
+            key={title}
+            onClick={() => toggle(index)}
+            type="button"
+          >
+            <span>{done.includes(index) ? "✓" : index + 1}</span>
+            <div>
+              <strong>{title}</strong>
+              <small>{detail}</small>
+            </div>
+          </button>
+        ))}
+      </div>
+      <button
+        className="primary-button"
+        disabled={done.length !== steps.length}
+        onClick={onComplete}
+        type="button"
+      >
+        Big W repair complete
+      </button>
+    </div>
+  );
+}
+
+function BrainrotBossBattle({ onComplete }: { onComplete: () => void }) {
+  const rap =
+    "Skibidi slime in a capybara hat. Breathe in soft, breathe out like splat. Brain says chaos, but facts say wait. Call your grown-up—co-regulate!";
+  const [started, setStarted] = useState(false);
+
+  return (
+    <div className="boss-battle">
+      <div className={started ? "dj-slime dancing" : "dj-slime"}>
+        <span aria-hidden="true">🎧</span>
+        <strong>DJ SLIME</strong>
+        <div className="beat-bars" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+          <i />
+        </div>
+      </div>
+      <div className="rap-card">
+        “Skibidi slime in a capybara hat.
+        <br />
+        Breathe in soft, breathe out like splat.
+        <br />
+        Brain says chaos, but facts say wait.
+        <br />
+        Call your grown-up—co-regulate!”
+      </div>
+      <p>Feet on the floor. Easy breath in. Sloooower breath out.</p>
+      <button
+        className="primary-button"
+        onClick={() => {
+          setStarted(true);
+          speak(rap);
+          onComplete();
+        }}
+        type="button"
+      >
+        🔊 Drop the original slime beat
+      </button>
+      <small>Original character and rap—no influencer imitation.</small>
+    </div>
+  );
+}
+
+function ChaosChillChallenge({ onComplete }: { onComplete: () => void }) {
+  const states = [
+    ["🌪️", "Chaos", "Fast, hot, loud, wiggly"],
+    ["🧊", "Freeze", "Still, far away, hard to talk"],
+    ["🌧️", "Low", "Heavy, slow, teary, tired"],
+    ["🌤️", "Ready", "Steady enough to look and choose"],
+  ];
+  const [bodyState, setBodyState] = useState("Chaos");
+
+  return (
+    <div className="body-weather">
+      <p>Which body weather is closest? There is no bad answer.</p>
+      <div className="weather-grid">
+        {states.map(([emoji, name, clues]) => (
+          <button
+            aria-pressed={bodyState === name}
+            key={name}
+            onClick={() => setBodyState(name)}
+            type="button"
+          >
+            <span aria-hidden="true">{emoji}</span>
+            <strong>{name} mode</strong>
+            <small>{clues}</small>
+          </button>
+        ))}
+      </div>
+      <div className="weather-result" role="status">
+        <strong>My body is in {bodyState.toLowerCase()} mode.</strong>
+        <span>I am not bad. My body is communicating.</span>
+      </div>
+      <button className="primary-button" onClick={onComplete} type="button">
+        Pick a co-op chill move
+      </button>
+    </div>
+  );
+}
+
+function SigmaBothChallenge({ onComplete }: { onComplete: () => void }) {
+  return (
+    <div className="sigma-both">
+      <div>
+        <span>TRUTH 1</span>
+        <strong>I’m super mad.</strong>
+      </div>
+      <span className="both-plus">AND</span>
+      <div>
+        <span>TRUTH 2</span>
+        <strong>I can use safe hands.</strong>
+      </div>
+      <p>Big feelings are allowed. Unsafe actions still need a limit.</p>
+      <button
+        className="primary-button"
+        onClick={() => {
+          speak("I am super mad, and I can use safe hands.");
+          onComplete();
+        }}
+        type="button"
+      >
+        🔊 Practice both truths
+      </button>
+    </div>
+  );
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("home");
   const [emotionId, setEmotionId] = useState("angry");
   const [powerUpId, setPowerUpId] = useState<PowerUpId | null>(null);
-  const [aura, setAura] = useState(0);
+  const [auraRestored, setAuraRestored] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
   const [glossaryQuery, setGlossaryQuery] = useState("");
   const [glossaryEmotionId, setGlossaryEmotionId] = useState("shame");
   const [openWorld, setOpenWorld] = useState("notice");
   const [heroFeeling, setHeroFeeling] = useState("hurt");
   const [heroAsk, setHeroAsk] = useState("please help me join");
+  const [vibePack, setVibePack] = useState<VibePackId>("genAlpha");
+  const [arcadeSkillId, setArcadeSkillId] =
+    useState<ArcadeSkillId>("sixSeven");
 
   const emotion =
     EMOTIONS.find((item) => item.id === emotionId) ?? EMOTIONS[0];
@@ -614,6 +1171,16 @@ function App() {
       `${item.name} ${item.alias} ${item.message}`.toLowerCase().includes(query),
     );
   }, [glossaryQuery]);
+  const arcadeSkill =
+    ARCADE_SKILLS.find((item) => item.id === arcadeSkillId) ?? ARCADE_SKILLS[0];
+  const activeVibePack = VIBE_PACKS[vibePack];
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("power-up-pals-vibe-pack");
+    if (saved === "genAlpha" || saved === "creature" || saved === "straightUp") {
+      setVibePack(saved);
+    }
+  }, []);
 
   const go = (tab: Tab) => {
     setActiveTab(tab);
@@ -628,10 +1195,41 @@ function App() {
 
   const choosePowerUp = (id: PowerUpId) => {
     setPowerUpId(id);
-    setAura((current) => current + 1);
+    setAuraRestored(true);
     setCelebrate(false);
     window.setTimeout(() => setCelebrate(true), 20);
     window.setTimeout(() => setCelebrate(false), 1300);
+  };
+
+  const restoreAura = useCallback(() => {
+    setAuraRestored(true);
+  }, []);
+
+  const chooseVibePack = (id: VibePackId) => {
+    setVibePack(id);
+    window.localStorage.setItem("power-up-pals-vibe-pack", id);
+  };
+
+  const downloadVibePack = () => {
+    const content = [
+      `${activeVibePack.name} — Power-Up Pals`,
+      activeVibePack.note,
+      "",
+      ...ARCADE_SKILLS.map(
+        (skill) =>
+          `${activeVibePack.labels[skill.id]}\n${skill.stable}\nDBT: ${skill.dbt}`,
+      ),
+      "",
+      "Slang is optional. The stable skill subtitle always stays.",
+    ].join("\n\n");
+    const url = URL.createObjectURL(
+      new Blob([content], { type: "text/plain;charset=utf-8" }),
+    );
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${activeVibePack.name.toLowerCase().replaceAll(" ", "-")}.txt`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   };
 
   const cycle = [
@@ -724,11 +1322,18 @@ function App() {
             </button>
           ))}
         </nav>
-        <div className="aura-chip" aria-label={`${aura} aura glows collected`}>
+        <div
+          className={auraRestored ? "aura-chip restored" : "aura-chip"}
+          aria-label={
+            auraRestored
+              ? "Aura restored after practicing a skill"
+              : "Aura ready to recharge"
+          }
+        >
           <span aria-hidden="true">✨</span>
           <span>
-            <strong>{aura}</strong>
-            <small>Aura glows</small>
+            <strong>{auraRestored ? "RESTORED" : "READY"}</strong>
+            <small>Aura status</small>
           </span>
         </div>
       </header>
@@ -763,10 +1368,10 @@ function App() {
                   </button>
                   <button
                     className="secondary-button jumbo"
-                    onClick={() => go("worlds")}
+                    onClick={() => go("arcade")}
                     type="button"
                   >
-                    Explore skill worlds
+                    Play in the Vibe Arcade
                   </button>
                 </div>
                 <div className="trust-line">
@@ -1356,6 +1961,152 @@ function App() {
           </div>
         )}
 
+        {activeTab === "arcade" && (
+          <div className="page arcade-page">
+            <section className="page-intro arcade-intro">
+              <div>
+                <span className="kicker">FUN WORDS • REAL SKILLS</span>
+                <h1>Vibe Arcade</h1>
+                <p>
+                  Slang is the fun seasoning. Every game keeps its stable skill
+                  subtitle, so the coping tool still makes sense when the meme
+                  changes.
+                </p>
+              </div>
+              <div className="character-bubble">
+                <span aria-hidden="true">🦎</span>
+                <p>
+                  <strong>Axel says:</strong> “We joke with the skill—never with
+                  the feeling or the kid.”
+                </p>
+              </div>
+            </section>
+
+            <section className="vibe-pack-lab" aria-labelledby="vibe-pack-title">
+              <div className="vibe-pack-copy">
+                <span className="kicker">SWAP THE WORDS, KEEP THE TOOL</span>
+                <h2 id="vibe-pack-title">Choose a Vibe Pack</h2>
+                <p>
+                  Pick the language that lands today. Your choice stays on this
+                  device, and the real DBT skill always appears underneath.
+                </p>
+                <button
+                  className="secondary-button"
+                  onClick={downloadVibePack}
+                  type="button"
+                >
+                  ↓ Download this Vibe Pack
+                </button>
+              </div>
+              <div className="vibe-pack-options">
+                {(Object.entries(VIBE_PACKS) as [VibePackId, (typeof VIBE_PACKS)[VibePackId]][]).map(
+                  ([id, pack]) => (
+                    <button
+                      aria-pressed={vibePack === id}
+                      className={vibePack === id ? "selected" : ""}
+                      key={id}
+                      onClick={() => chooseVibePack(id)}
+                      type="button"
+                    >
+                      <span aria-hidden="true">{pack.emoji}</span>
+                      <strong>{pack.name}</strong>
+                      <small>{pack.note}</small>
+                    </button>
+                  ),
+                )}
+              </div>
+            </section>
+
+            <section className="arcade-shell">
+              <div className="arcade-skill-menu" aria-label="Choose a skill game">
+                {ARCADE_SKILLS.map((skill) => (
+                  <button
+                    aria-pressed={arcadeSkillId === skill.id}
+                    className={
+                      arcadeSkillId === skill.id ? "selected" : undefined
+                    }
+                    key={skill.id}
+                    onClick={() => setArcadeSkillId(skill.id)}
+                    type="button"
+                  >
+                    <span className="arcade-skill-emoji" aria-hidden="true">
+                      {skill.emoji}
+                    </span>
+                    <span>
+                      <strong>{activeVibePack.labels[skill.id]}</strong>
+                      <small>{skill.stable}</small>
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="arcade-activity">
+                <header>
+                  <div>
+                    <span className="activity-dbt">REAL DBT: {arcadeSkill.dbt}</span>
+                    <h2>{activeVibePack.labels[arcadeSkill.id]}</h2>
+                    <p>{arcadeSkill.stable}</p>
+                  </div>
+                  <span className="activity-emoji" aria-hidden="true">
+                    {arcadeSkill.emoji}
+                  </span>
+                </header>
+                <p className="activity-blurb">{arcadeSkill.blurb}</p>
+                <div className="activity-stage">
+                  {arcadeSkill.id === "sixSeven" && (
+                    <SixSevenReset onComplete={restoreAura} />
+                  )}
+                  {arcadeSkill.id === "sigmaStop" && (
+                    <SigmaStopChallenge onComplete={restoreAura} />
+                  )}
+                  {arcadeSkill.id === "noCapFacts" && (
+                    <NoCapFactsChallenge onComplete={restoreAura} />
+                  )}
+                  {arcadeSkill.id === "susOrFacts" && (
+                    <SusOrFactsGame onComplete={restoreAura} />
+                  )}
+                  {arcadeSkill.id === "auraRecharge" && (
+                    <AuraRecharge onComplete={restoreAura} />
+                  )}
+                  {arcadeSkill.id === "bigWRepair" && (
+                    <RepairQuest onComplete={restoreAura} />
+                  )}
+                  {arcadeSkill.id === "brainrotBoss" && (
+                    <BrainrotBossBattle onComplete={restoreAura} />
+                  )}
+                  {arcadeSkill.id === "chaosChill" && (
+                    <ChaosChillChallenge onComplete={restoreAura} />
+                  )}
+                  {arcadeSkill.id === "sigmaBoth" && (
+                    <SigmaBothChallenge onComplete={restoreAura} />
+                  )}
+                </div>
+              </div>
+            </section>
+
+            <section className="slang-safety">
+              <div className="slang-safety-icon" aria-hidden="true">
+                🧂
+              </div>
+              <div>
+                <span className="kicker">FUN SEASONING RULE</span>
+                <h2>Slang invites. It never labels or minimizes.</h2>
+                <p>
+                  Say “your body is in chaos mode,” not “you are chaos.” If a
+                  phrase stops feeling fun, swap the pack or use the stable
+                  subtitle.
+                </p>
+              </div>
+              <div className="slang-do-dont">
+                <span>YES</span>
+                <strong>“Your Alarm Monster is loud. I’m with you.”</strong>
+                <span>NO</span>
+                <strong>“You’re being sus. Calm down.”</strong>
+              </div>
+            </section>
+          </div>
+        )}
+
         {activeTab === "grownup" && (
           <div className="page grownup-page">
             <section className="page-intro">
@@ -1499,6 +2250,8 @@ function App() {
                 ? "Machine"
                 : item.id === "glossary"
                   ? "Feelings"
+                  : item.id === "arcade"
+                    ? "Arcade"
                   : item.id === "grownup"
                     ? "Co-op"
                     : item.label}

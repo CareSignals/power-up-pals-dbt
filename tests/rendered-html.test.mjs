@@ -34,6 +34,7 @@ test("server-renders the Power-Up Pals home experience", async () => {
   assert.match(html, /Big feelings\./);
   assert.match(html, /Mega skills\./);
   assert.match(html, /Emotion Machine/);
+  assert.match(html, /Vibe Arcade/);
   assert.match(html, /Shame/);
   assert.match(html, /Grown-up co-op/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
@@ -55,7 +56,19 @@ test("includes the emotion model, shame support, and every DBT world", async () 
   assert.match(page, /Interpersonal Effectiveness/);
   assert.match(page, /Walking the Middle Path/);
   assert.match(page, /6–7 Reset/);
+  assert.match(page, /Sigma STOP/);
+  assert.match(page, /No-Cap Facts/);
+  assert.match(page, /Sus or Facts\?/);
+  assert.match(page, /Aura Recharge/);
+  assert.match(page, /Big W Repair/);
+  assert.match(page, /Brainrot Boss Battle/);
+  assert.match(page, /Chaos Mode → Chill Mode/);
+  assert.match(page, /Sigma Both Mode/);
+  assert.match(page, /Download this Vibe Pack/);
+  assert.match(page, /No score\. No streak\./);
+  assert.match(page, /Real sigma gets backup/);
   assert.match(page, /speechSynthesis/);
   assert.match(layout, /Power-Up Pals/);
+  assert.match(layout, /og-vibe-arcade\.png/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });
