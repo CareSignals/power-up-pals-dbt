@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://caresignals.github.io/power-up-pals-dbt/sitemap.xml

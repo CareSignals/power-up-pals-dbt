@@ -13,6 +13,7 @@ type VibePackId = "genAlpha" | "creature" | "straightUp";
 type CoreQuestId = "checkIn" | "slime" | "freeze" | "both" | "repair";
 type RewardId = "slime" | "blocks" | "pet" | "music" | "costume" | "portal";
 type FeelingGroupId = "all" | "hotFast" | "alarm" | "lowHeavy" | "connection";
+type QuestPauseState = "stopped" | "done";
 type ArcadeSkillId =
   | "sixSeven"
   | "sigmaStop"
@@ -88,10 +89,10 @@ const POWER_UPS: Record<
     label: "Get Backup",
     dbt: "Co-regulation",
     emoji: "🤝",
-    action: "Use your signal: “Grown-up power-up, please stay with me.”",
+    action: "Use your signal: “Safe grown-up power-up, please stay with me.”",
     impact: "A safe grown-up knows you need connection before solving.",
     after: "You are not alone with the giant feeling.",
-    cheer: "Real sigma gets backup. Connection unlocked!",
+    cheer: "Getting backup is a power move. Connection unlocked!",
   },
   bothMode: {
     label: "Both Mode",
@@ -136,7 +137,7 @@ const POWER_UPS: Record<
     action: "Tell the truth, check for hurt, and help fix what you can.",
     impact: "Others see honesty, care, and effort.",
     after: "Trust can regrow. The mistake does not become your identity.",
-    cheer: "Repair complete. Mistake ≠ bad kid.",
+    cheer: "Repair complete. A mistake does not make you a bad kid.",
   },
   slimeSlow: {
     label: "Slime Goes Slow",
@@ -535,7 +536,7 @@ const CORE_DIRECTIONS: Record<CoreQuestId, string> = {
   slime:
     "Slime goes slow. Easy breath in. Longer, slower breath out. Keep breathing. No holding.",
   freeze:
-    "Freeze your feet. Back up. Spy the scene. Then pick a safe, kind move or get your grown-up.",
+    "Freeze your feet. Back up. Spy the scene. Then pick a safe, kind move or get a safe grown-up.",
   both:
     "Both mode. Say two true things. I can be super mad, and I can use safe hands.",
   repair:
@@ -852,6 +853,21 @@ const CUSTOM_VOICE_CLIPS: Partial<Record<string, string>> = {
 };
 
 const PUBLIC_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const TAB_HASHES: Record<Tab, string> = {
+  home: "#/home",
+  machine: "#/machine",
+  glossary: "#/glossary",
+  worlds: "#/worlds",
+  arcade: "#/arcade",
+  grownup: "#/grownup",
+};
+
+function tabFromHash(hash: string): Tab {
+  const match = (Object.entries(TAB_HASHES) as [Tab, string][]).find(
+    ([, value]) => value === hash,
+  );
+  return match?.[0] ?? "home";
+}
 
 let activeVoiceAudio: HTMLAudioElement | null = null;
 
@@ -910,11 +926,22 @@ function SixSevenReset({ onComplete }: { onComplete?: () => void }) {
     setPhase("wiggle");
     setSeconds(6);
   };
+  const phaseAnnouncement =
+    phase === "wiggle"
+      ? "Wiggle"
+      : phase === "freeze"
+        ? "Freeze and notice"
+        : phase === "done"
+          ? "Done"
+          : "";
 
   return (
     <div className={`challenge-stage ${phase}`}>
-      <div className="challenge-orb" aria-live="polite">
-        <span className="challenge-number">
+      <span className="sr-only" aria-live="polite" role="status">
+        {phaseAnnouncement}
+      </span>
+      <div className="challenge-orb">
+        <span className="challenge-number" aria-hidden="true">
           {phase === "ready"
             ? "6–7"
             : phase === "call"
@@ -1067,10 +1094,12 @@ function SlimeBreathing({ onComplete }: { onComplete?: () => void }) {
 function FeelingsCheckIn({
   emotionId,
   onComplete,
+  onGrownup,
   onSelect,
 }: {
   emotionId: string;
   onComplete: () => void;
+  onGrownup: () => void;
   onSelect: (id: string) => void;
 }) {
   const selected =
@@ -1096,6 +1125,18 @@ function FeelingsCheckIn({
           🔊
         </button>
       </div>
+      {(selected.id === "shame" || selected.id === "guilty") && (
+        <div className="connection-cue" role="note">
+          <span aria-hidden="true">🤝</span>
+          <div>
+            <strong>This one is easier with a safe grown-up.</strong>
+            <p>Want to get them?</p>
+          </div>
+          <button onClick={onGrownup} type="button">
+            Get a safe grown-up
+          </button>
+        </div>
+      )}
       <p>Tap the face that is closest. A grown-up can help point and name.</p>
       <div className="checkin-faces" aria-label="Choose a feeling">
         {EMOTIONS.slice(0, 8).map((item) => (
@@ -1136,7 +1177,7 @@ function SigmaStopChallenge({ onComplete }: { onComplete: () => void }) {
     ["FREEZE", "Stop your body. Safe hands and feet."],
     ["BACK UP", "Take one step or one breath of space."],
     ["SPY THE SCENE", "What is happening? What is your brain guessing?"],
-    ["PICK THE MOVE", "Get space, use words, or call your grown-up."],
+    ["PICK THE MOVE", "Get space, use words, or call a safe grown-up."],
   ];
   const [step, setStep] = useState(0);
 
@@ -1168,13 +1209,13 @@ function SigmaStopChallenge({ onComplete }: { onComplete: () => void }) {
               <span aria-hidden="true">💬</span>
               <strong>USE WORDS</strong>
             </button>
-            <button onClick={() => chooseMove("Get my grown-up")} type="button">
+            <button onClick={() => chooseMove("Get a safe grown-up")} type="button">
               <span aria-hidden="true">🤝</span>
               <strong>GET GROWN-UP</strong>
             </button>
           </div>
           <div className="backup-truth">
-            Real sigma gets backup. Safe and kind beats solo and dominant.
+            Getting backup is a power move. Safe and kind beats doing it alone.
           </div>
         </div>
       )}
@@ -1231,14 +1272,14 @@ function NoCapFactsChallenge({ onComplete }: { onComplete: () => void }) {
         </div>
         <div>
           <span>🛡️ SAFE MOVE</span>
-          <p>Get space, use words, or call your grown-up.</p>
+          <p>Get space, use words, or call a safe grown-up.</p>
         </div>
       </div>
       <button
         className="primary-button"
         onClick={() => {
           speak(
-            "No-cap facts. What did your eyes see? Brain guess. What are you worried might happen? Safe move. Get space, use words, or call your grown-up.",
+            "No-cap facts. What did your eyes see? Brain guess. What are you worried might happen? Safe move. Get space, use words, or call a safe grown-up.",
           );
           onComplete();
         }}
@@ -1320,11 +1361,11 @@ function SusOrFactsGame({ onComplete }: { onComplete: () => void }) {
           className={correct ? "detective-feedback correct" : "detective-feedback"}
           role="status"
         >
-          <strong>{correct ? "Detective check! " : "Good try—look again. "}</strong>
-          {correct ? current.why : "Can eyes see it or ears hear it?"}
+          <strong>{correct ? "Detective check! " : "Here’s the clue. "}</strong>
+          {current.why}
         </div>
       )}
-      {correct && (
+      {choice && (
         <button className="primary-button" onClick={next} type="button">
           {card === DETECTIVE_CARDS.length - 1
             ? "Finish the case"
@@ -1342,7 +1383,6 @@ function AuraRecharge({ onComplete }: { onComplete: () => void }) {
     ["😴", "Sleep or rest"],
     ["🕺", "Movement"],
     ["🧸", "Comfort"],
-    ["💊", "Medicine with my grown-up"],
     ["🤝", "Connection"],
   ];
   const [selected, setSelected] = useState<string[]>([]);
@@ -1381,7 +1421,7 @@ function AuraRecharge({ onComplete }: { onComplete: () => void }) {
         onClick={onComplete}
         type="button"
       >
-        Ask my grown-up for this
+        Ask a safe grown-up for this
       </button>
       <small>No score. No streak. Noticing a need is the win.</small>
     </div>
@@ -1411,7 +1451,7 @@ function RepairQuest({ onComplete }: { onComplete: () => void }) {
       <div className="repair-banner">
         <span aria-hidden="true">🧰</span>
         <div>
-          <strong>Mistake ≠ bad kid</strong>
+          <strong>A mistake does not make you a bad kid.</strong>
           <small>Truth and repair help trust regrow.</small>
         </div>
       </div>
@@ -1445,7 +1485,7 @@ function RepairQuest({ onComplete }: { onComplete: () => void }) {
 
 function BrainrotBossBattle({ onComplete }: { onComplete: () => void }) {
   const rap =
-    "Skibidi slime in a capybara hat. Breathe in soft, breathe out like splat. Brain says chaos, but facts say wait. Call your grown-up—co-regulate!";
+    "Sploinkity slime in a capybara hat. Breathe in soft, breathe out like splat. Brain says chaos, but facts say wait. Call a safe grown-up—co-regulate!";
   const [started, setStarted] = useState(false);
 
   return (
@@ -1461,13 +1501,13 @@ function BrainrotBossBattle({ onComplete }: { onComplete: () => void }) {
         </div>
       </div>
       <div className="rap-card">
-        “Skibidi slime in a capybara hat.
+        “Sploinkity slime in a capybara hat.
         <br />
         Breathe in soft, breathe out like splat.
         <br />
         Brain says chaos, but facts say wait.
         <br />
-        Call your grown-up—co-regulate!”
+        Call a safe grown-up—co-regulate!”
       </div>
       <p>Feet on the floor. Easy breath in. Sloooower breath out.</p>
       <button
@@ -1533,7 +1573,7 @@ function SigmaBothChallenge({ onComplete }: { onComplete: () => void }) {
   const moves = [
     ["👐", "use safe hands"],
     ["💬", "use words"],
-    ["🤝", "get my grown-up"],
+    ["🤝", "get a safe grown-up"],
   ];
   const [feeling, setFeeling] = useState("mad");
   const [move, setMove] = useState("use safe hands");
@@ -1627,9 +1667,127 @@ function QuestControls({
       </button>
       <button onClick={onGrownup} type="button">
         <span aria-hidden="true">🤝</span>
-        <strong>GROWN-UP</strong>
+        <strong>SAFE GROWN-UP</strong>
       </button>
     </div>
+  );
+}
+
+function QuestPausePanel({
+  onGrownup,
+  onHome,
+  onRestart,
+  state,
+}: {
+  onGrownup: () => void;
+  onHome: () => void;
+  onRestart: () => void;
+  state: QuestPauseState;
+}) {
+  const stopped = state === "stopped";
+  return (
+    <div className="quest-pause-panel" role="status">
+      <span aria-hidden="true">{stopped ? "🫧" : "✨"}</span>
+      <h3>
+        {stopped
+          ? "Stopped. You can rest here."
+          : "All done. You can choose what’s next."}
+      </h3>
+      <p>
+        {stopped
+          ? "Nothing else has to happen right now."
+          : "Thank you for listening to your body."}
+      </p>
+      <div>
+        <button
+          className="primary-button jumbo"
+          onClick={stopped ? onRestart : onHome}
+          type="button"
+        >
+          {stopped ? "↻ Start again" : "🏝️ Back to Home"}
+        </button>
+        <button
+          className="secondary-button jumbo"
+          onClick={stopped ? onGrownup : onRestart}
+          type="button"
+        >
+          {stopped ? "🤝 Get a safe grown-up" : "🕹️ Play another quest"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CaregiverSafetyBlock({ compact = false }: { compact?: boolean }) {
+  return (
+    <section
+      className={compact ? "safety-signpost compact" : "safety-signpost"}
+      aria-labelledby={compact ? undefined : "safety-signpost-title"}
+    >
+      <div>
+        <span className="kicker">US CAREGIVER SUPPORT</span>
+        <h2 id={compact ? undefined : "safety-signpost-title"}>
+          Extra support is available.
+        </h2>
+        <p>A quiet signpost for moments that need more than an app.</p>
+      </div>
+      <ul>
+        <li>
+          <strong>988 Suicide &amp; Crisis Lifeline:</strong>{" "}
+          <a href="tel:988">call 988</a> or <a href="sms:988">text 988</a>
+        </li>
+        <li>
+          <strong>Crisis Text Line:</strong>{" "}
+          <a href="sms:741741?body=HOME">text HOME to 741741</a>
+        </li>
+        <li>
+          <strong>Childhelp National Child Abuse Hotline:</strong>{" "}
+          <a href="tel:+18004224453">call 1-800-422-4453</a>
+        </li>
+      </ul>
+      <p>
+        If a child is in immediate danger, call 911 or go to your nearest
+        emergency department.
+      </p>
+    </section>
+  );
+}
+
+function SiteFooter() {
+  return (
+    <footer className="site-footer">
+      <div className="footer-intro">
+        <strong>Power-Up Pals</strong>
+        <p>
+          DBT-informed play and co-regulation—not treatment, a diagnosis, or a
+          replacement for a clinician.
+        </p>
+        <small>
+          Prototype • Updated July 2026 • Clinical review pending
+        </small>
+      </div>
+      <nav aria-label="Site information">
+        <a href={`${PUBLIC_BASE_PATH}/privacy/`}>Privacy</a>
+        <button
+          onClick={() =>
+            document
+              .querySelector<HTMLElement>(".site-footer .safety-signpost")
+              ?.scrollIntoView()
+          }
+          type="button"
+        >
+          US crisis resources
+        </button>
+        <a
+          href="https://github.com/CareSignals/power-up-pals-dbt/issues"
+          rel="noreferrer"
+          target="_blank"
+        >
+          Report a problem ↗
+        </a>
+      </nav>
+      <CaregiverSafetyBlock compact />
+    </footer>
   );
 }
 
@@ -1803,7 +1961,7 @@ function SafeBaseBuilder({
           onClick={onGrownup}
           type="button"
         >
-          🤝 GET MY GROWN-UP POWER-UP
+          🤝 GET A SAFE GROWN-UP
         </button>
       </div>
 
@@ -1811,6 +1969,9 @@ function SafeBaseBuilder({
         {SAFE_BASE_REWARDS.map((reward) => {
           const isUnlocked = unlocked.includes(reward.id);
           const isPlaced = placed.includes(reward.id);
+          const unlockQuest =
+            CORE_QUESTS.find((quest) => quest.unlocks.includes(reward.id))
+              ?.title ?? "Core Quest";
           return (
             <button
               aria-label={
@@ -1818,10 +1979,16 @@ function SafeBaseBuilder({
                   ? `${isPlaced ? "Remove" : "Add"} ${reward.name}`
                   : `${reward.name} is locked`
               }
+              aria-disabled={!isUnlocked}
               aria-pressed={isPlaced}
-              disabled={!isUnlocked}
               key={reward.id}
               onClick={() => {
+                if (!isUnlocked) {
+                  speak(
+                    `${reward.name} is locked. Practice the ${unlockQuest} quest to unlock it.`,
+                  );
+                  return;
+                }
                 onToggleReward(reward.id);
                 speak(
                   `${reward.name}. ${reward.detail}`,
@@ -1856,23 +2023,28 @@ function App() {
   const [glossaryQuery, setGlossaryQuery] = useState("");
   const [glossaryGroup, setGlossaryGroup] =
     useState<FeelingGroupId>("all");
+  const [machineGroup, setMachineGroup] = useState<FeelingGroupId>("all");
+  const [machineCycleStep, setMachineCycleStep] = useState(0);
   const [glossaryEmotionId, setGlossaryEmotionId] = useState("shame");
   const [openWorld, setOpenWorld] = useState("notice");
   const [heroFeeling, setHeroFeeling] = useState("hurt");
   const [heroAsk, setHeroAsk] = useState("please help me join");
-  const [vibePack, setVibePack] = useState<VibePackId>("genAlpha");
+  const [vibePack, setVibePack] = useState<VibePackId>("straightUp");
   const [arcadeSkillId, setArcadeSkillId] =
     useState<ArcadeSkillId>("sixSeven");
   const [coreQuestId, setCoreQuestId] = useState<CoreQuestId>("checkIn");
   const [coreQuestRunKey, setCoreQuestRunKey] = useState(0);
   const [completedQuestId, setCompletedQuestId] =
     useState<CoreQuestId | null>(null);
+  const [questPause, setQuestPause] = useState<QuestPauseState | null>(null);
   const [unlockedRewards, setUnlockedRewards] = useState<RewardId[]>([]);
   const [placedRewards, setPlacedRewards] = useState<RewardId[]>([]);
   const [safeAdults, setSafeAdults] = useState<string[]>(["My grown-up"]);
   const [grownupPowerOpen, setGrownupPowerOpen] = useState(false);
   const [littleReader, setLittleReader] = useState(true);
+  const [routeAnnouncement, setRouteAnnouncement] = useState("");
   const grownupCloseRef = useRef<HTMLButtonElement>(null);
+  const previousTabRef = useRef<Tab>("home");
 
   const emotion =
     EMOTIONS.find((item) => item.id === emotionId) ?? EMOTIONS[0];
@@ -1894,6 +2066,16 @@ function App() {
       return inGroup && matchesQuery;
     });
   }, [glossaryGroup, glossaryQuery, littleReader]);
+  const visibleMachineEmotions = useMemo(() => {
+    if (!littleReader) return EMOTIONS;
+    const group =
+      FEELING_GROUPS.find((item) => item.id === machineGroup) ??
+      FEELING_GROUPS[0];
+    return EMOTIONS.filter((item) => group.emotions.includes(item.id)).slice(
+      0,
+      8,
+    );
+  }, [littleReader, machineGroup]);
   const arcadeSkill =
     ARCADE_SKILLS.find((item) => item.id === arcadeSkillId) ?? ARCADE_SKILLS[0];
   const coreQuest =
@@ -1938,8 +2120,45 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const syncTabFromHash = () => {
+      const nextTab = tabFromHash(window.location.hash);
+      stopVoice();
+      setCompletedQuestId(null);
+      setQuestPause(null);
+      setCoreQuestRunKey((current) => current + 1);
+      setActiveTab(nextTab);
+      window.scrollTo({ top: 0, behavior: "auto" });
+    };
+    if (!window.location.hash) {
+      window.history.replaceState(null, "", TAB_HASHES.home);
+    } else {
+      syncTabFromHash();
+    }
+    window.addEventListener("hashchange", syncTabFromHash);
+    window.addEventListener("popstate", syncTabFromHash);
+    return () => {
+      window.removeEventListener("hashchange", syncTabFromHash);
+      window.removeEventListener("popstate", syncTabFromHash);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (previousTabRef.current === activeTab) return;
+    previousTabRef.current = activeTab;
+    const label = NAV.find((item) => item.id === activeTab)?.label ?? "Page";
+    setRouteAnnouncement(label);
+    window.setTimeout(() => {
+      document
+        .querySelector<HTMLElement>("#main-content h1")
+        ?.focus({ preventScroll: true });
+    }, 0);
+  }, [activeTab]);
+
+  useEffect(() => {
     if (!grownupPowerOpen) return;
     const priorFocus = document.activeElement as HTMLElement | null;
+    const priorOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     grownupCloseRef.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -1971,6 +2190,7 @@ function App() {
     window.addEventListener("keydown", closeOnEscape);
     return () => {
       window.removeEventListener("keydown", closeOnEscape);
+      document.body.style.overflow = priorOverflow;
       priorFocus?.focus();
     };
   }, [grownupPowerOpen]);
@@ -1978,18 +2198,24 @@ function App() {
   const go = (tab: Tab) => {
     stopVoice();
     setCoreQuestRunKey((current) => current + 1);
+    setQuestPause(null);
     setActiveTab(tab);
+    if (window.location.hash !== TAB_HASHES[tab]) {
+      window.history.pushState(null, "", TAB_HASHES[tab]);
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const selectEmotion = (id: string, goToMachine = false) => {
     setEmotionId(id);
     setPowerUpId(null);
+    setMachineCycleStep(0);
     if (goToMachine) go("machine");
   };
 
   const choosePowerUp = (id: PowerUpId) => {
     setPowerUpId(id);
+    setMachineCycleStep(6);
     setAuraRestored(true);
     setCelebrate(false);
     window.setTimeout(() => setCelebrate(true), 20);
@@ -2023,12 +2249,27 @@ function App() {
   const resetCoreQuest = () => {
     stopVoice();
     setCompletedQuestId(null);
+    setQuestPause(null);
     setCoreQuestRunKey((current) => current + 1);
   };
 
   const finishCoreQuest = () => {
     resetCoreQuest();
     go("home");
+  };
+
+  const stopCoreQuest = () => {
+    stopVoice();
+    setCompletedQuestId(null);
+    setCoreQuestRunKey((current) => current + 1);
+    setQuestPause("stopped");
+  };
+
+  const confirmCoreQuestDone = () => {
+    stopVoice();
+    setCompletedQuestId(null);
+    setCoreQuestRunKey((current) => current + 1);
+    setQuestPause("done");
   };
 
   const putCompletedRewardsInBase = () => {
@@ -2093,7 +2334,7 @@ function App() {
     }
     setGrownupPowerOpen(true);
     speak(
-      "Grown-up power-up. Connect first. Your body is having a huge alarm. I am here with you. We will solve it when your body is ready.",
+      "Safe grown-up power-up. Connect first. Your body is having a huge alarm. I am here with you. We will solve it when your body is ready.",
     );
   };
 
@@ -2221,13 +2462,62 @@ function App() {
       changed: Boolean(powerUp),
     },
   ];
+  const littleCycleLabels = [
+    "What made it harder",
+    "What happened",
+    "What your brain said",
+    "What your body did",
+    "What the feeling says",
+    "What you wanted to do",
+    "Pick a safe power-up",
+    "What people see",
+    "What happens next",
+  ];
+  const littleCycleValues = [
+    emotion.vulnerability,
+    emotion.event,
+    emotion.thought,
+    emotion.body,
+    emotion.message,
+    emotion.urge,
+    powerUp
+      ? `Try ${powerUp.label}.`
+      : "Pause here. You can practice the next move.",
+    powerUp ? powerUp.action : emotion.reaction,
+    powerUp ? powerUp.after : emotion.after,
+  ];
+  const littleCycle = cycle.map((item, index) => ({
+    ...item,
+    kid: littleCycleLabels[index],
+    value: littleCycleValues[index],
+  }));
+  const currentLittleCycleStep =
+    littleCycle[machineCycleStep] ?? littleCycle[0];
 
   return (
     <div
       className={littleReader ? "app-shell little-reader" : "app-shell"}
       data-voice-mode="custom-ready"
     >
-      <header className="topbar">
+      <a
+        className="skip-link"
+        href="#main-content"
+        inert={grownupPowerOpen}
+        onClick={(event) => {
+          event.preventDefault();
+          document.querySelector<HTMLElement>("#main-content")?.focus();
+        }}
+      >
+        Skip to main content
+      </a>
+      <span className="sr-only" aria-live="polite" role="status">
+        {routeAnnouncement}
+      </span>
+      <header
+        aria-hidden={grownupPowerOpen || undefined}
+        className="topbar"
+        inert={grownupPowerOpen}
+      >
         <button className="brand" onClick={() => go("home")} type="button">
           <span className="brand-mark" aria-hidden="true">
             ✦
@@ -2240,6 +2530,7 @@ function App() {
         <nav className="desktop-nav" aria-label="Main navigation">
           {NAV.map((item) => (
             <button
+              aria-current={activeTab === item.id ? "page" : undefined}
               className={activeTab === item.id ? "nav-item active" : "nav-item"}
               key={item.id}
               onClick={() => go(item.id)}
@@ -2292,7 +2583,9 @@ function App() {
       </header>
 
       <button
+        aria-hidden={grownupPowerOpen || undefined}
         className="listen-first-banner"
+        inert={grownupPowerOpen}
         onClick={hearCurrentPage}
         type="button"
       >
@@ -2301,7 +2594,12 @@ function App() {
         <small>You do not have to read.</small>
       </button>
 
-      <main>
+      <main
+        aria-hidden={grownupPowerOpen || undefined}
+        id="main-content"
+        inert={grownupPowerOpen}
+        tabIndex={-1}
+      >
         {activeTab === "home" && (
           <div className="page home-page">
             <section className="hero">
@@ -2310,7 +2608,10 @@ function App() {
                   <span>NEW QUEST</span>
                   Real DBT skills. Kid-world language.
                 </div>
-                <h1 aria-label="Power-Up Pals: Build Your Chill World">
+                <h1
+                  aria-label="Power-Up Pals: Build Your Chill World"
+                  tabIndex={-1}
+                >
                   <span className="hero-product-name">Power-Up Pals:</span>
                   Build Your
                   <br />
@@ -2344,10 +2645,21 @@ function App() {
                 </div>
               </div>
               <div className="hero-art">
-                <img
-                  alt="Original capybara, axolotl, unicorn, and slime characters exploring a colorful emotion machine world"
-                  src={`${PUBLIC_BASE_PATH}/assets/power-up-pals-world.png`}
-                />
+                <picture>
+                  <source
+                    sizes="(max-width: 760px) 94vw, (max-width: 1100px) 48vw, 750px"
+                    srcSet={`${PUBLIC_BASE_PATH}/assets/power-up-pals-world-750.webp 750w, ${PUBLIC_BASE_PATH}/assets/power-up-pals-world-1500.webp 1500w`}
+                    type="image/webp"
+                  />
+                  <img
+                    alt="Original capybara, axolotl, unicorn, and slime characters exploring a colorful emotion machine world"
+                    decoding="async"
+                    fetchPriority="high"
+                    height="1024"
+                    src={`${PUBLIC_BASE_PATH}/assets/power-up-pals-world-750.webp`}
+                    width="1920"
+                  />
+                </picture>
                 <div className="floating-sticker sticker-one">6–7 RESET!</div>
                 <div className="floating-sticker sticker-two">
                   SIGMA SKILL ✦
@@ -2461,19 +2773,23 @@ function App() {
             <section className="page-intro">
               <div>
                 <span className="kicker">THE MAIN QUEST</span>
-                <h1>Emotion Cycle Machine</h1>
-                <p>
-                  Feelings send messages. Urges suggest moves. The Choice Gate
-                  is where a new ending can begin.
-                </p>
+                <h1 tabIndex={-1}>Emotion Cycle Machine</h1>
+                {!littleReader && (
+                  <p>
+                    Feelings send messages. Urges suggest moves. The Choice Gate
+                    is where a new ending can begin.
+                  </p>
+                )}
               </div>
-              <div className="character-bubble">
-                <span aria-hidden="true">🦫</span>
-                <p>
-                  <strong>Cappy says:</strong> “No feeling is an L. Let’s see
-                  what it’s trying to tell us.”
-                </p>
-              </div>
+              {!littleReader && (
+                <div className="character-bubble">
+                  <span aria-hidden="true">🦫</span>
+                  <p>
+                    <strong>Cappy says:</strong> “Every feeling has a message.
+                    Let’s notice it together.”
+                  </p>
+                </div>
+              )}
             </section>
 
             <section className="machine-panel">
@@ -2482,8 +2798,43 @@ function App() {
                   <span className="step-chip">STEP 1</span>
                   <h2>Pick an emotion</h2>
                 </div>
-                <div className="emotion-picker" aria-label="Choose an emotion">
-                  {EMOTIONS.map((item) => (
+                {littleReader && (
+                  <div
+                    className="machine-feeling-groups"
+                    aria-label="Choose a feeling group"
+                    role="group"
+                  >
+                    {FEELING_GROUPS.map((group) => (
+                      <button
+                        aria-pressed={machineGroup === group.id}
+                        key={group.id}
+                        onClick={() => {
+                          setMachineGroup(group.id);
+                          const firstInGroup = EMOTIONS.find((item) =>
+                            group.emotions.includes(item.id),
+                          );
+                          if (
+                            firstInGroup &&
+                            !group.emotions.includes(emotion.id)
+                          ) {
+                            selectEmotion(firstInGroup.id);
+                          }
+                          speak(group.spoken, `feeling-group-${group.id}`);
+                        }}
+                        type="button"
+                      >
+                        <span aria-hidden="true">{group.emoji}</span>
+                        <strong>{group.label}</strong>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div
+                  className="emotion-picker"
+                  aria-label="Choose an emotion"
+                  role="group"
+                >
+                  {visibleMachineEmotions.map((item) => (
                     <button
                       aria-pressed={emotion.id === item.id}
                       className={
@@ -2525,20 +2876,34 @@ function App() {
                 >
                   🔊 Hear it
                 </button>
-                <div className="message-grid">
-                  <article>
-                    <span>MESSAGE TO ME</span>
-                    <p>{emotion.message}</p>
-                  </article>
-                  <article>
-                    <span>MESSAGE OTHERS MAY SEE</span>
-                    <p>{emotion.signal}</p>
-                  </article>
-                  <article>
-                    <span>WHAT I MIGHT NEED</span>
-                    <p>{emotion.need}</p>
-                  </article>
-                </div>
+                {(emotion.id === "shame" || emotion.id === "guilty") && (
+                  <div className="connection-cue machine-connection-cue" role="note">
+                    <span aria-hidden="true">🤝</span>
+                    <div>
+                      <strong>This one is easier with a safe grown-up.</strong>
+                      <p>Want to get them?</p>
+                    </div>
+                    <button onClick={openGrownupPower} type="button">
+                      Get a safe grown-up
+                    </button>
+                  </div>
+                )}
+                {!littleReader && (
+                  <div className="message-grid">
+                    <article>
+                      <span>MESSAGE TO ME</span>
+                      <p>{emotion.message}</p>
+                    </article>
+                    <article>
+                      <span>MESSAGE OTHERS MAY SEE</span>
+                      <p>{emotion.signal}</p>
+                    </article>
+                    <article>
+                      <span>WHAT I MIGHT NEED</span>
+                      <p>{emotion.need}</p>
+                    </article>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -2550,51 +2915,116 @@ function App() {
                   Tap a power-up below to change the last part of the cycle.
                 </p>
               </div>
-              <div className="cycle-grid" aria-label={`${emotion.name} cycle`}>
-                {cycle.map((item, index) => (
-                  <button
-                    aria-label={`Hear step ${index + 1}: ${item.title}`}
-                    className={[
-                      "cycle-card",
-                      item.emotion ? "emotion-node" : "",
-                      item.choice ? "choice-node" : "",
-                      item.changed ? "changed-node" : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                    key={`${emotion.id}-${item.title}-${powerUpId ?? "react"}`}
-                    onClick={() =>
-                      speak(
-                        `Step ${index + 1}. ${item.kid}. ${item.title}. ${item.value}`,
-                        `cycle-${emotion.id}-${index + 1}`,
-                      )
-                    }
-                    type="button"
-                  >
-                    <div className="cycle-topline">
-                      <span className="cycle-index">{index + 1}</span>
-                      <span className="cycle-icon" aria-hidden="true">
-                        {item.icon}
-                      </span>
-                    </div>
-                    <span className="cycle-kid-label">{item.kid}</span>
-                    <h3>{item.title}</h3>
-                    <p>{item.value}</p>
-                    <span className="cycle-hear" aria-hidden="true">
-                      🔊 TAP TO HEAR
+              {littleReader ? (
+                <div
+                  className={[
+                    "little-cycle-stepper",
+                    currentLittleCycleStep.emotion ? "emotion-node" : "",
+                    currentLittleCycleStep.choice ? "choice-node" : "",
+                    currentLittleCycleStep.changed ? "changed-node" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  aria-label={`${emotion.name} cycle, step ${machineCycleStep + 1} of 9`}
+                >
+                  <div className="little-cycle-card">
+                    <span className="little-cycle-icon" aria-hidden="true">
+                      {currentLittleCycleStep.icon}
                     </span>
-                    {index < cycle.length - 1 && (
-                      <span className="cycle-arrow" aria-hidden="true">
-                        →
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-              <div className="reload-line">
-                <span aria-hidden="true">↺</span>
-                The aftereffects can become fuel for the next cycle.
-              </div>
+                    <strong>{currentLittleCycleStep.kid}</strong>
+                    <p>{currentLittleCycleStep.value}</p>
+                  </div>
+                  <div className="little-cycle-progress">
+                    <strong>{machineCycleStep + 1} of 9</strong>
+                    <div aria-label="Emotion cycle steps" role="group">
+                      {littleCycle.map((item, index) => (
+                        <button
+                          aria-current={
+                            machineCycleStep === index ? "step" : undefined
+                          }
+                          aria-label={`Go to step ${index + 1}: ${item.kid}`}
+                          key={`little-dot-${item.title}`}
+                          onClick={() => setMachineCycleStep(index)}
+                          type="button"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="little-cycle-actions">
+                    <button
+                      className="listen-button"
+                      onClick={() =>
+                        speak(
+                          `Step ${machineCycleStep + 1}. ${currentLittleCycleStep.kid}. ${currentLittleCycleStep.value}`,
+                          `cycle-${emotion.id}-${machineCycleStep + 1}`,
+                        )
+                      }
+                      type="button"
+                    >
+                      🔊 Hear
+                    </button>
+                    <button
+                      className="primary-button jumbo"
+                      onClick={() =>
+                        setMachineCycleStep((current) =>
+                          current === littleCycle.length - 1 ? 0 : current + 1,
+                        )
+                      }
+                      type="button"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="cycle-grid" aria-label={`${emotion.name} cycle`}>
+                    {cycle.map((item, index) => (
+                      <button
+                        aria-label={`Hear step ${index + 1}: ${item.title}`}
+                        className={[
+                          "cycle-card",
+                          item.emotion ? "emotion-node" : "",
+                          item.choice ? "choice-node" : "",
+                          item.changed ? "changed-node" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        key={`${emotion.id}-${item.title}-${powerUpId ?? "react"}`}
+                        onClick={() =>
+                          speak(
+                            `Step ${index + 1}. ${item.kid}. ${item.title}. ${item.value}`,
+                            `cycle-${emotion.id}-${index + 1}`,
+                          )
+                        }
+                        type="button"
+                      >
+                        <div className="cycle-topline">
+                          <span className="cycle-index">{index + 1}</span>
+                          <span className="cycle-icon" aria-hidden="true">
+                            {item.icon}
+                          </span>
+                        </div>
+                        <span className="cycle-kid-label">{item.kid}</span>
+                        <h3>{item.title}</h3>
+                        <p>{item.value}</p>
+                        <span className="cycle-hear" aria-hidden="true">
+                          🔊 TAP TO HEAR
+                        </span>
+                        {index < cycle.length - 1 && (
+                          <span className="cycle-arrow" aria-hidden="true">
+                            →
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="reload-line">
+                    <span aria-hidden="true">↺</span>
+                    The aftereffects can become fuel for the next cycle.
+                  </div>
+                </>
+              )}
             </section>
 
             <section className="powerup-section">
@@ -2622,9 +3052,9 @@ function App() {
                         {item.emoji}
                       </span>
                       <span>
-                        <small>DBT: {item.dbt}</small>
+                        {!littleReader && <small>DBT: {item.dbt}</small>}
                         <strong>{item.label}</strong>
-                        <p>{item.action}</p>
+                        {!littleReader && <p>{item.action}</p>}
                       </span>
                     </button>
                   );
@@ -2685,7 +3115,7 @@ function App() {
             <section className="page-intro">
               <div>
                 <span className="kicker">FEELING DEX</span>
-                <h1>Emotion Glossary</h1>
+                <h1 tabIndex={-1}>Emotion Glossary</h1>
                 <p>
                   Learn the real emotion name, the kid-world nickname, its body
                   clues, its message, and what might help.
@@ -2785,6 +3215,19 @@ function App() {
                     🔊 Hear
                   </button>
                 </div>
+                {(glossaryEmotion.id === "shame" ||
+                  glossaryEmotion.id === "guilty") && (
+                  <div className="connection-cue" role="note">
+                    <span aria-hidden="true">🤝</span>
+                    <div>
+                      <strong>This one is easier with a safe grown-up.</strong>
+                      <p>Want to get them?</p>
+                    </div>
+                    <button onClick={openGrownupPower} type="button">
+                      Get a safe grown-up
+                    </button>
+                  </div>
+                )}
                 <div className="detail-block">
                   <span>WHAT IT TELLS ME</span>
                   <p>{glossaryEmotion.message}</p>
@@ -2832,7 +3275,7 @@ function App() {
             <section className="page-intro">
               <div>
                 <span className="kicker">MY WORLD + DBT WORLD MAP</span>
-                <h1>Build a Safe Base.</h1>
+                <h1 tabIndex={-1}>Build a Safe Base.</h1>
                 <p>
                   Practice a core skill, unlock a cozy piece, and build a
                   personal world around calming items and safe people.
@@ -2883,10 +3326,14 @@ function App() {
             </section>
 
             <section className="world-map">
-              <div className="world-tabs" role="tablist" aria-label="DBT worlds">
+              <div
+                className="world-tabs"
+                aria-label="Choose a DBT world"
+                role="group"
+              >
                 {WORLDS.map((world) => (
                   <button
-                    aria-selected={openWorld === world.id}
+                    aria-pressed={openWorld === world.id}
                     className={
                       openWorld === world.id
                         ? "world-tab selected"
@@ -2894,7 +3341,6 @@ function App() {
                     }
                     key={world.id}
                     onClick={() => setOpenWorld(world.id)}
-                    role="tab"
                     type="button"
                   >
                     <span aria-hidden="true">{world.emoji}</span>
@@ -2912,7 +3358,6 @@ function App() {
                     <div
                       className={`world-detail world-${world.id}`}
                       key={world.id}
-                      role="tabpanel"
                     >
                       <div className="world-detail-copy">
                         <span className="world-mascot" aria-hidden="true">
@@ -3068,7 +3513,7 @@ function App() {
             <section className="page-intro arcade-intro">
               <div>
                 <span className="kicker">FUN WORDS • REAL SKILLS</span>
-                <h1>Vibe Arcade</h1>
+                <h1 tabIndex={-1}>Vibe Arcade</h1>
                 <p>
                   Slang is the fun seasoning. Every game keeps its stable skill
                   subtitle, so the coping tool still makes sense when the meme
@@ -3108,15 +3553,20 @@ function App() {
                 </button>
               </div>
 
-              <div className="core-quest-tabs" role="tablist" aria-label="Core quests">
+              <div
+                className="core-quest-tabs"
+                aria-label="Choose a Core Quest"
+                role="group"
+              >
                 {CORE_QUESTS.map((quest) => (
                   <button
-                    aria-selected={coreQuest.id === quest.id}
+                    aria-pressed={coreQuest.id === quest.id}
                     className={coreQuest.id === quest.id ? "selected" : ""}
                     key={quest.id}
                     onClick={() => {
                       stopVoice();
                       setCompletedQuestId(null);
+                      setQuestPause(null);
                       setCoreQuestRunKey((current) => current + 1);
                       setCoreQuestId(quest.id);
                       speak(
@@ -3124,7 +3574,6 @@ function App() {
                         `quest-${quest.id}`,
                       );
                     }}
-                    role="tab"
                     type="button"
                   >
                     <span aria-hidden="true">{quest.emoji}</span>
@@ -3134,7 +3583,7 @@ function App() {
                 ))}
               </div>
 
-              <div className="core-quest-play" role="tabpanel">
+              <div className="core-quest-play">
                 <header>
                   <div>
                     <span>CORE QUEST</span>
@@ -3155,19 +3604,26 @@ function App() {
                     </span>
                   </div>
                 </header>
-                {!completedQuest && (
+                {!completedQuest && !questPause && (
                   <QuestControls
                     directions={CORE_DIRECTIONS[coreQuest.id]}
-                    onAllDone={finishCoreQuest}
+                    onAllDone={confirmCoreQuestDone}
                     onGrownup={openGrownupPower}
-                    onStop={resetCoreQuest}
+                    onStop={stopCoreQuest}
                   />
                 )}
                 <div
                   className="core-quest-stage"
                   key={`${coreQuest.id}-${coreQuestRunKey}`}
                 >
-                  {completedQuest ? (
+                  {questPause ? (
+                    <QuestPausePanel
+                      onGrownup={openGrownupPower}
+                      onHome={() => go("home")}
+                      onRestart={resetCoreQuest}
+                      state={questPause}
+                    />
+                  ) : completedQuest ? (
                     <RewardReveal
                       onAllDone={finishCoreQuest}
                       onLater={resetCoreQuest}
@@ -3181,6 +3637,7 @@ function App() {
                         <FeelingsCheckIn
                           emotionId={emotionId}
                           onComplete={() => completeCoreQuest("checkIn")}
+                          onGrownup={openGrownupPower}
                           onSelect={(id) => selectEmotion(id)}
                         />
                       )}
@@ -3342,7 +3799,7 @@ function App() {
             <section className="page-intro">
               <div>
                 <span className="kicker">GROWN-UP CO-OP</span>
-                <h1>Connect first. Skill second.</h1>
+                <h1 tabIndex={-1}>Connect first. Skill second.</h1>
                 <p>
                   Children this young borrow regulation from safe adults. Use
                   short words, a steady body, and the same practiced cues.
@@ -3423,8 +3880,60 @@ function App() {
                 onClick={openGrownupPower}
                 type="button"
               >
-                🤝 Get My Grown-Up Power-Up
+                🤝 Get a Safe Grown-Up
               </button>
+            </section>
+
+            <CaregiverSafetyBlock />
+
+            <section className="privacy-signpost">
+              <span aria-hidden="true">🔐</span>
+              <div>
+                <span className="kicker">DEVICE-LOCAL PRIVACY</span>
+                <h2>No account, tracking, analytics, or child reports.</h2>
+                <p>
+                  Preferences and Safe Base pieces stay in this browser. The
+                  app does not record or transmit a child’s feeling choices.
+                </p>
+              </div>
+              <a
+                className="secondary-button"
+                href={`${PUBLIC_BASE_PATH}/privacy/`}
+              >
+                Read the privacy page
+              </a>
+            </section>
+
+            <section className="grownup-vibe-select">
+              <div>
+                <span className="kicker">CAREGIVER LANGUAGE CHOICE</span>
+                <h2>Pick words that fit this child.</h2>
+                <p>
+                  Straight-Up is the age-5–7 default. Gen Alpha slang is an
+                  optional pack when the child already knows and enjoys it.
+                  Every pack keeps the stable skill subtitle.
+                </p>
+              </div>
+              <div
+                aria-label="Choose a caregiver-approved Vibe Pack"
+                role="group"
+              >
+                {(Object.entries(VIBE_PACKS) as [
+                  VibePackId,
+                  (typeof VIBE_PACKS)[VibePackId],
+                ][]).map(([id, pack]) => (
+                  <button
+                    aria-pressed={vibePack === id}
+                    key={`grownup-${id}`}
+                    onClick={() => chooseVibePack(id)}
+                    type="button"
+                  >
+                    <span aria-hidden="true">{pack.emoji}</span>
+                    <strong>{pack.name}</strong>
+                    <small>{pack.note}</small>
+                  </button>
+                ))}
+              </div>
             </section>
 
             <section className="voice-ready-card">
@@ -3506,6 +4015,11 @@ function App() {
                   <li>Use the same short cue in real moments.</li>
                   <li>Notice effort, truth, repair, and asking for help.</li>
                   <li>Let the child control personal sharing.</li>
+                  <li>
+                    A teacher, clinician, or another trusted adult can be the
+                    safe grown-up when a home caregiver is not safe or
+                    available.
+                  </li>
                 </ul>
               </div>
               <div>
@@ -3519,6 +4033,20 @@ function App() {
                   <li>Do not demand explanations during full alarm mode.</li>
                   <li>Do not treat a skill miss as defiance or failure.</li>
                 </ul>
+              </div>
+            </section>
+
+            <section className="medicine-note">
+              <span aria-hidden="true">🩺</span>
+              <div>
+                <span className="kicker">CAREGIVER PLEASE CHECK</span>
+                <h2>Adults handle health care and prescribed medicine.</h2>
+                <p>
+                  Treating illness belongs in the DBT PLEASE skill, but
+                  medication choices stay with caregivers and the child’s
+                  qualified clinician—not in the child’s tap-to-choose coping
+                  menu.
+                </p>
               </div>
             </section>
 
@@ -3536,7 +4064,7 @@ function App() {
               </div>
             </section>
 
-            <footer className="care-note">
+            <section className="care-note">
               <div>
                 <strong>Prototype care note</strong>
                 <p>
@@ -3568,19 +4096,29 @@ function App() {
                   DBT-C randomized trial ↗
                 </a>
               </div>
-            </footer>
+            </section>
           </div>
         )}
       </main>
 
+      <div
+        aria-hidden={grownupPowerOpen || undefined}
+        className="site-footer-wrap"
+        inert={grownupPowerOpen}
+      >
+        <SiteFooter />
+      </div>
+
       <button
+        aria-hidden={grownupPowerOpen || undefined}
         className="grownup-power-fab"
+        inert={grownupPowerOpen}
         onClick={openGrownupPower}
         type="button"
       >
         <span aria-hidden="true">🤝</span>
         <span>
-          <strong>GET MY GROWN-UP</strong>
+          <strong>GET A SAFE GROWN-UP</strong>
           <small>Power-up</small>
         </span>
       </button>
@@ -3645,9 +4183,15 @@ function App() {
         </div>
       )}
 
-      <nav className="mobile-nav" aria-label="Mobile navigation">
+      <nav
+        aria-hidden={grownupPowerOpen || undefined}
+        aria-label="Mobile navigation"
+        className="mobile-nav"
+        inert={grownupPowerOpen}
+      >
         {NAV.map((item) => (
           <button
+            aria-current={activeTab === item.id ? "page" : undefined}
             className={activeTab === item.id ? "active" : ""}
             key={item.id}
             onClick={() => go(item.id)}

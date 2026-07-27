@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import test from "node:test";
 
-async function render() {
+async function render(pathname = "/") {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
   const { default: worker } = await import(workerUrl.href);
 
   return worker.fetch(
-    new Request("http://localhost/", {
+    new Request(`http://localhost${pathname}`, {
       headers: { accept: "text/html" },
     }),
     {
@@ -49,7 +49,7 @@ test("includes the emotion model, shame support, and every DBT world", async () 
 
   assert.match(page, /name:\s*"Shame"/);
   assert.match(page, /My-brain-says-I’m-bad mode/);
-  assert.match(page, /Mistake ≠ bad kid/);
+  assert.match(page, /A mistake does not make you a bad kid/);
   assert.match(page, /Mindfulness/);
   assert.match(page, /Distress Tolerance/);
   assert.match(page, /Emotion Regulation/);
@@ -66,12 +66,12 @@ test("includes the emotion model, shame support, and every DBT world", async () 
   assert.match(page, /Sigma Both Mode/);
   assert.match(page, /Download this Vibe Pack/);
   assert.match(page, /No score\. No streak\./);
-  assert.match(page, /Real sigma gets backup/);
+  assert.match(page, /Getting backup is a power move/);
   assert.match(page, /THE POLISHED CORE FIVE/);
   assert.match(page, /Feelings Check-In/);
   assert.match(page, /Respawn and Repair/);
   assert.match(page, /My Safe Base/);
-  assert.match(page, /GET MY GROWN-UP POWER-UP/);
+  assert.match(page, /GET A SAFE GROWN-UP/);
   assert.match(page, /Freeze those feet, back it up/);
   assert.match(page, /Cappy/);
   assert.match(page, /Both-Bot/);
@@ -87,7 +87,48 @@ test("includes the emotion model, shame support, and every DBT world", async () 
   assert.match(page, /CUSTOM_VOICE_CLIPS/);
   assert.match(page, /Big pictures\. Short words\. Spoken help\./);
   assert.match(page, /speechSynthesis/);
+  assert.match(page, /Here’s the clue/);
+  assert.match(page, /Stopped\. You can rest here\./);
+  assert.match(page, /little-cycle-stepper/);
+  assert.match(page, /TAB_HASHES/);
+  assert.match(page, /aria-disabled=\{!isUnlocked\}/);
+  assert.match(page, /Crisis Text Line/);
+  assert.match(page, /Childhelp National Child Abuse Hotline/);
+  assert.match(page, /href=\{`\$\{PUBLIC_BASE_PATH\}\/privacy\/`\}/);
+  assert.doesNotMatch(page, /role="tab"/);
+  assert.doesNotMatch(page, /Skibidi/);
+  assert.doesNotMatch(page, /Mistake ≠ bad kid/);
   assert.match(layout, /Power-Up Pals/);
   assert.match(layout, /og-vibe-arcade\.png/);
+  assert.match(layout, /favicon\.ico/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
+});
+
+test("publishes the plain-language privacy route", async () => {
+  const response = await render("/privacy");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /What stays on this device/);
+  assert.match(html, /No analytics/);
+  assert.match(html, /Nothing saved by the app leaves this device/);
+  assert.match(html, /does not record, score, report, or transmit/i);
+  assert.match(html, /power-up-pals-safe-adults/);
+  assert.match(html, /not standalone DBT treatment/i);
+});
+
+test("ships lightweight responsive art and the required static metadata files", async () => {
+  const files = [
+    "../public/assets/power-up-pals-world-750.webp",
+    "../public/assets/power-up-pals-world-1500.webp",
+    "../public/favicon-32.png",
+    "../public/apple-touch-icon.png",
+    "../public/favicon.ico",
+    "../public/robots.txt",
+    "../public/sitemap.xml",
+  ];
+  const sizes = await Promise.all(
+    files.map((file) => stat(new URL(file, import.meta.url))),
+  );
+  assert.ok(sizes[0].size < 250_000);
+  assert.ok(sizes[1].size < 250_000);
 });

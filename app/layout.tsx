@@ -22,8 +22,22 @@ export const metadata: Metadata = {
     "A tablet-first, caregiver-supported DBT-informed play world where children ages 5–7 practice skills and build a personal Safe Base.",
   applicationName: "Power-Up Pals: Build Your Chill World",
   icons: {
-    icon: `${publicBasePath}/icon.png`,
-    apple: `${publicBasePath}/icon.png`,
+    icon: [
+      {
+        url: `${publicBasePath}/favicon.ico`,
+        sizes: "32x32",
+      },
+      {
+        url: `${publicBasePath}/favicon-32.png`,
+        sizes: "32x32",
+        type: "image/png",
+      },
+    ],
+    apple: {
+      url: `${publicBasePath}/apple-touch-icon.png`,
+      sizes: "180x180",
+      type: "image/png",
+    },
   },
   keywords: [
     "DBT skills",

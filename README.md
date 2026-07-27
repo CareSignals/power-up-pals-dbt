@@ -50,20 +50,23 @@ Additional surfaces include:
 - original skill worlds and characters;
 - replaceable Vibe Packs that preserve the stable DBT subtitle;
 - a caregiver co-regulation zone;
-- a globally available **Get My Grown-Up** action.
+- a globally available **Get a Safe Grown-Up** action.
 
 ## Accessibility and narration
 
 - Little Reader mode is the default.
+- The Straight-Up Vibe Pack is the default; slang remains caregiver-selectable.
 - Core controls have large touch targets and spoken directions.
-- Emotion Machine cycle cards can be read aloud individually.
+- Little Reader turns the Emotion Machine into a picture-group picker and a
+  one-card-at-a-time, spoken nine-step cycle.
+- Hash routes make each app zone bookmarkable and preserve browser Back.
 - Device speech is the current fallback narrator.
 - Authorized custom audio can be mapped through `CUSTOM_VOICE_CLIPS` in
   `app/page.tsx`.
 - The shared audio controller stops both custom MP3 playback and device speech.
 - Timed activities reset when stopped or exited.
 - The caregiver dialog supports initial focus, focus containment, Escape, and
-  focus return.
+  focus return; the background is inert and page scrolling is locked.
 - Reduced-motion preferences suppress celebratory movement.
 
 No child-entered information should be sent to an external voice service.
@@ -76,6 +79,7 @@ files.
   narration controls.
 - `app/globals.css` — responsive visual system and reduced-motion behavior.
 - `app/layout.tsx` — product metadata.
+- `app/privacy/page.tsx` — plain-language, static privacy disclosure.
 - `tests/rendered-html.test.mjs` — server-rendered product-content checks.
 - `.openai/hosting.json` — existing OpenAI Sites project reference.
 
@@ -89,6 +93,10 @@ State is intentionally device-local:
 
 There is no child account, analytics pipeline, behavioral history, or cloud
 database in this prototype.
+
+The public app also includes a calm US caregiver-support signpost, a footer
+with review status and contact information, responsive WebP art, a full icon
+set, `robots.txt`, and `sitemap.xml`.
 
 ## Local development
 
@@ -122,6 +130,6 @@ When reviewing this project, focus on:
 
 ## Current phase
 
-Phase A—the complete UI pathway pass—is implemented. Narration scripts should
-be frozen and clinically reviewed before producing the authorized ElevenLabs
-voice files.
+Phase A and the July 2026 safety/accessibility audit fixes are implemented.
+Narration scripts should be frozen and clinically reviewed before producing
+the authorized ElevenLabs voice files.
