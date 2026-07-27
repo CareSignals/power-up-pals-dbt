@@ -1,6 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  CUSTOM_VOICE_CUE_CLIPS,
+  CUSTOM_VOICE_META,
+  CUSTOM_VOICE_TEXT_CLIPS,
+} from "./generated-voice-clips";
 
 type Tab =
   | "home"
@@ -1026,11 +1031,6 @@ const NAV: { id: Tab; label: string; emoji: string }[] = [
   { id: "grownup", label: "Grown-up Co-op", emoji: "🤝" },
 ];
 
-const CUSTOM_VOICE_CLIPS: Partial<Record<string, string>> = {
-  // Authorized custom-voice clips can be mapped here by cue name.
-  // Example: pageHome: "/audio/custom/page-home.mp3"
-};
-
 const PUBLIC_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const TAB_HASHES: Record<Tab, string> = {
   home: "#/home",
@@ -1077,13 +1077,19 @@ function speakWithDeviceVoice(text: string) {
 function speak(text: string, cue?: string) {
   if (typeof window === "undefined" || narrationQuiet) return;
   stopVoice();
-  const customClip = cue ? CUSTOM_VOICE_CLIPS[cue] : undefined;
+  const customClip =
+    (cue ? CUSTOM_VOICE_CUE_CLIPS[cue] : undefined) ??
+    CUSTOM_VOICE_TEXT_CLIPS[text];
   if (!customClip) {
     speakWithDeviceVoice(text);
     return;
   }
 
-  activeVoiceAudio = new Audio(customClip);
+  const resolvedClip = customClip.startsWith("/")
+    ? `${PUBLIC_BASE_PATH}${customClip}`
+    : customClip;
+  activeVoiceAudio = new Audio(resolvedClip);
+  activeVoiceAudio.playbackRate = activeNarratorTone === "hype" ? 1.08 : 0.94;
   activeVoiceAudio.play().catch(() => speakWithDeviceVoice(text));
 }
 
@@ -3302,7 +3308,7 @@ function App() {
   return (
     <div
       className={littleReader ? "app-shell little-reader" : "app-shell"}
-      data-voice-mode="custom-ready"
+      data-voice-mode="custom-static"
     >
       <a
         className="skip-link"
@@ -4849,16 +4855,15 @@ function App() {
                 <h2>Big pictures. Short words. Spoken help.</h2>
                 <p>
                   Every core quest has a large Hear button, and tapping key
-                  pictures says their name. The built-in device narrator is
-                  active now. An authorized custom narrator can replace it when
-                  approved audio is added.
+                  pictures says their name. The approved custom narrator is
+                  active for fixed app scripts. Device speech safely handles
+                  variable phrases without contacting an outside service.
                 </p>
               </div>
               <div className="voice-status">
-                <strong>🔊 DEVICE VOICE: ON</strong>
+                <strong>🎙️ CUSTOM VOICE: ON</strong>
                 <small>
-                  Custom voices must be your own, licensed, or used with the
-                  speaker’s permission.
+                  {CUSTOM_VOICE_META.voiceName} • static, pre-generated audio
                 </small>
               </div>
             </section>

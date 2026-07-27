@@ -67,10 +67,12 @@ Additional surfaces include:
 - Little Reader turns the Emotion Machine into a picture-group picker and a
   one-card-at-a-time, spoken nine-step cycle.
 - Hash routes make each app zone bookmarkable and preserve browser Back.
-- Device speech is the current fallback narrator.
+- The authorized **Moses Gamer Youtuber** ElevenLabs voice is shipped as 167
+  static MP3 clips for fixed narration paths.
+- Device speech remains the offline fallback for variable phrases.
 - Calm Voice, Hype Voice, replay, and Quiet controls are available globally.
-- Authorized custom audio can be mapped through `CUSTOM_VOICE_CLIPS` in
-  `app/page.tsx`.
+- `CUSTOM_VOICE_CUE_CLIPS` and `CUSTOM_VOICE_TEXT_CLIPS` connect fixed app
+  narration without exposing an API key in the browser.
 - The shared audio controller stops both custom MP3 playback and device speech.
 - Timed activities reset when stopped or exited.
 - The caregiver dialog supports initial focus, focus containment, Escape, and
@@ -81,6 +83,10 @@ No child-entered information should be sent to an external voice service.
 Custom narration should be generated ahead of time and shipped as static audio
 files.
 
+To regenerate authorized clips, put a restricted Text-to-Speech key in the
+Git-ignored `ELEVENLABS-KEY-LOCAL.txt`, then run `pnpm voice:generate`. The key
+is read only by the local generator and is never bundled or committed.
+
 ## Architecture
 
 - `app/page.tsx` — product data, interactive pathways, local persistence, and
@@ -90,6 +96,9 @@ files.
 - `app/privacy/page.tsx` — plain-language, static privacy disclosure.
 - `tests/rendered-html.test.mjs` — server-rendered product-content checks.
 - `.openai/hosting.json` — existing OpenAI Sites project reference.
+- `scripts/generate-elevenlabs-voice.mjs` — local-only static voice-pack
+  generator.
+- `app/generated-voice-clips.ts` — generated cue/text-to-audio map.
 
 State is intentionally device-local:
 
@@ -139,6 +148,7 @@ When reviewing this project, focus on:
 
 ## Current phase
 
-Phase A, the July 2026 safety/accessibility audit fixes, and the Phase B
-engagement loop are implemented. Narration scripts should be frozen and
-clinically reviewed before producing the authorized ElevenLabs voice files.
+Phase A, the July 2026 safety/accessibility audit fixes, the Phase B engagement
+loop, and the first authorized static ElevenLabs voice pack are implemented.
+Narration wording and delivery should still receive trauma-informed clinical
+review before clinical or commercial use.

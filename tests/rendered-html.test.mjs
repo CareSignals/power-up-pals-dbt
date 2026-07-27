@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile, stat } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import test from "node:test";
 
 async function render(pathname = "/") {
@@ -81,11 +81,12 @@ test("includes the emotion model, shame support, and every DBT world", async () 
   assert.match(page, /nctsn\.org\/interventions\/parent-child-care/);
   assert.match(page, /pubmed\.ncbi\.nlm\.nih\.gov\/28942805/);
   assert.match(page, /localStorage/);
-  assert.match(page, /data-voice-mode="custom-ready"/);
+  assert.match(page, /data-voice-mode="custom-static"/);
   assert.match(page, /TAP TO HEAR/);
   assert.match(page, /power-up-pals-little-reader/);
-  assert.match(page, /DEVICE VOICE: ON/);
-  assert.match(page, /CUSTOM_VOICE_CLIPS/);
+  assert.match(page, /CUSTOM VOICE: ON/);
+  assert.match(page, /CUSTOM_VOICE_CUE_CLIPS/);
+  assert.match(page, /CUSTOM_VOICE_TEXT_CLIPS/);
   assert.match(page, /PLAY WITH ME/);
   assert.match(page, /CHALLENGE ME/);
   assert.match(page, /GROWN-UP TURN/);
@@ -144,4 +145,23 @@ test("ships lightweight responsive art and the required static metadata files", 
   );
   assert.ok(sizes[0].size < 250_000);
   assert.ok(sizes[1].size < 250_000);
+});
+
+test("ships the authorized static custom-voice pack without an API key", async () => {
+  const [files, generatedMap, page, generator] = await Promise.all([
+    readdir(new URL("../public/audio/custom/", import.meta.url)),
+    readFile(new URL("../app/generated-voice-clips.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(
+      new URL("../scripts/generate-elevenlabs-voice.mjs", import.meta.url),
+      "utf8",
+    ),
+  ]);
+
+  assert.equal(files.filter((file) => file.endsWith(".mp3")).length, 167);
+  assert.match(generatedMap, /Moses Gamer Youtuber/);
+  assert.match(generatedMap, /page-missions/);
+  assert.match(page, /Device speech safely handles/);
+  assert.match(generator, /ELEVENLABS-KEY-LOCAL\.txt/);
+  assert.doesNotMatch(generatedMap, /xi-api-key|ELEVENLABS_API_KEY/);
 });

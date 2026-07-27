@@ -64,6 +64,11 @@ export default function PrivacyPage() {
           The app does not record, score, report, or transmit a child’s
           emotional selections.
         </p>
+        <p>
+          Custom narration is pre-generated and shipped as ordinary audio
+          files. The live app does not send a child’s words, choices, or
+          feelings to a voice service.
+        </p>
       </section>
 
       <section>
